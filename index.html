@@ -324,7 +324,7 @@ input[readonly]{opacity:.55;}
 <div id="screen-main" class="screen active">
   <div class="topbar">
     <div class="topbar-title">🏢 <em>Gestión</em> Inmobiliaria</div>
-    <span style="background:var(--s3);border:1px solid var(--ln);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--grn);">● EN LÍNEA</span>
+    <button id="sync-badge" onclick="configureCloud()" style="background:var(--s3);border:1px solid var(--ln);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--amb);">● LOCAL</button>
   </div>
 
   <div class="nav-tabs">
@@ -551,6 +551,133 @@ const DB = {
   set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v))}catch{} }
 };
 
+// Sincronización compartida mediante Supabase. La URL y la llave pública se
+// guardan solamente en cada dispositivo; nunca se guarda una contraseña.
+const CLOUD = {
+  workspace:'denise-ronnie',
+  get url(){return localStorage.getItem('inmo_cloud_url')||'';},
+  get key(){return localStorage.getItem('inmo_cloud_key')||'';},
+  get token(){return localStorage.getItem('inmo_cloud_token')||'';},
+  get refresh(){return localStorage.getItem('inmo_cloud_refresh')||'';}
+};
+const cloudEnabled=()=>Boolean(CLOUD.url&&CLOUD.key&&CLOUD.token);
+
+function cloudHeaders(extra={}){
+  return {
+    apikey:CLOUD.key,
+    Authorization:`Bearer ${CLOUD.token}`,
+    'Content-Type':'application/json',
+    ...extra
+  };
+}
+function setSyncBadge(ok=false,text='LOCAL'){
+  const badge=document.getElementById('sync-badge');
+  if(!badge)return;
+  badge.textContent=`● ${text}`;
+  badge.style.color=ok?'var(--grn)':text==='LOCAL'?'var(--amb)':'var(--red)';
+}
+async function configureCloud(){
+  const url=prompt('URL de Supabase para compartir los datos:',CLOUD.url);
+  if(url===null)return;
+  const key=prompt('Llave pública (anon key) de Supabase:',CLOUD.key);
+  if(key===null)return;
+  const email=prompt('Correo de tu cuenta de la inmobiliaria:');
+  if(!email)return;
+  const password=prompt('Contraseña de tu cuenta (no se guardará):');
+  if(!password)return;
+  localStorage.setItem('inmo_cloud_url',url.trim().replace(/\/$/,''));
+  localStorage.setItem('inmo_cloud_key',key.trim());
+  setSyncBadge(false,'CONECTANDO');
+  try{
+    const r=await fetch(`${CLOUD.url}/auth/v1/token?grant_type=password`,{
+      method:'POST',
+      headers:{apikey:CLOUD.key,'Content-Type':'application/json'},
+      body:JSON.stringify({email:email.trim(),password})
+    });
+    const session=await r.json();
+    if(!r.ok||!session.access_token)throw new Error(session.error_description||session.msg||'No se pudo iniciar sesión');
+    localStorage.setItem('inmo_cloud_token',session.access_token);
+    localStorage.setItem('inmo_cloud_refresh',session.refresh_token||'');
+    await syncFromCloud(true);
+  }catch(e){
+    setSyncBadge(false,'SIN ACCESO');
+    showToast(e.message||'No se pudo conectar',true);
+  }
+}
+async function refreshCloudSession(){
+  if(!CLOUD.refresh)return false;
+  const r=await fetch(`${CLOUD.url}/auth/v1/token?grant_type=refresh_token`,{
+    method:'POST',
+    headers:{apikey:CLOUD.key,'Content-Type':'application/json'},
+    body:JSON.stringify({refresh_token:CLOUD.refresh})
+  });
+  const session=await r.json();
+  if(!r.ok||!session.access_token)return false;
+  localStorage.setItem('inmo_cloud_token',session.access_token);
+  localStorage.setItem('inmo_cloud_refresh',session.refresh_token||CLOUD.refresh);
+  return true;
+}
+async function cloudFetch(url,options={},retry=true){
+  const r=await fetch(url,{...options,headers:cloudHeaders(options.headers||{})});
+  if(r.status===401&&retry&&await refreshCloudSession()){
+    return cloudFetch(url,options,false);
+  }
+  return r;
+}
+async function saveRecordCloud(kind,record){
+  if(!cloudEnabled())return;
+  const body={
+    id:record.id,workspace:CLOUD.workspace,kind,
+    payload:record,updated_at:new Date().toISOString()
+  };
+  const r=await cloudFetch(`${CLOUD.url}/rest/v1/inmo_records`,{
+    method:'POST',
+    headers:{Prefer:'resolution=merge-duplicates'},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok)throw new Error('No se pudo sincronizar');
+}
+async function deleteRecordCloud(id){
+  if(!cloudEnabled())return;
+  const r=await cloudFetch(`${CLOUD.url}/rest/v1/inmo_records?id=eq.${encodeURIComponent(id)}&workspace=eq.${encodeURIComponent(CLOUD.workspace)}`,{
+    method:'DELETE'
+  });
+  if(!r.ok)throw new Error('No se pudo eliminar en la nube');
+}
+async function syncFromCloud(showResult=false){
+  if(!cloudEnabled()){setSyncBadge(false,'LOCAL');return;}
+  setSyncBadge(false,'SINCRONIZANDO');
+  try{
+    const r=await cloudFetch(`${CLOUD.url}/rest/v1/inmo_records?workspace=eq.${encodeURIComponent(CLOUD.workspace)}&select=id,kind,payload&order=updated_at.desc`);
+    if(!r.ok)throw new Error('Configuración incompleta');
+    const rows=await r.json();
+    const remote={
+      propiedad:rows.filter(x=>x.kind==='propiedad').map(x=>x.payload),
+      demanda:rows.filter(x=>x.kind==='demanda').map(x=>x.payload),
+      visita:rows.filter(x=>x.kind==='visita').map(x=>x.payload)
+    };
+    const merge=(local,online)=>[...new Map([...online,...local].map(x=>[x.id,x])).values()]
+      .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    props_=merge(props_,remote.propiedad);
+    demandas=merge(demandas,remote.demanda);
+    visitas=merge(visitas,remote.visita);
+    DB.set('inmo_p',props_);DB.set('inmo_d',demandas);DB.set('inmo_v',visitas);
+    const remoteIds=new Set(rows.map(x=>x.id));
+    const pending=[
+      ...props_.filter(x=>!remoteIds.has(x.id)).map(x=>saveRecordCloud('propiedad',x)),
+      ...demandas.filter(x=>!remoteIds.has(x.id)).map(x=>saveRecordCloud('demanda',x)),
+      ...visitas.filter(x=>!remoteIds.has(x.id)).map(x=>saveRecordCloud('visita',x))
+    ];
+    await Promise.all(pending);
+    renderProps();renderDemanda();renderVisitas();updateCounts();
+    setSyncBadge(true,'COMPARTIDO');
+    if(showResult)showToast('Datos compartidos y actualizados');
+  }catch(e){
+    setSyncBadge(false,'SIN CONEXIÓN');
+    if(showResult)showToast(e.message||'No se pudo sincronizar',true);
+  }
+}
+
 // ── STATE ─────────────────────────────────────────────────────
 let props_   = DB.get('inmo_p');
 let demandas = DB.get('inmo_d');
@@ -621,6 +748,24 @@ function initChips(containerId,options,multi=true,initialVals=[]){
   });
 }
 function getChips(id){return chipState[id]?[...chipState[id]]:[];}
+function initSubtypeChips(){
+  const custom=(F.subTipo||[]).find(x=>!(SUBTYPES[captType]||[]).includes(x))||'';
+  initChips('f-subtipo',[...(SUBTYPES[captType]||[]),'Otro'],true,
+    custom?[...(F.subTipo||[]).filter(x=>x!==custom),'Otro']:(F.subTipo||[]));
+  const wrap=document.getElementById('f-subtipo');
+  const other=document.getElementById('f-subtipo-otro');
+  const input=document.getElementById('f-subtipo-texto');
+  if(input)input.value=custom;
+  const refresh=()=>other?.classList.toggle('hidden',!chipState['f-subtipo']?.has('Otro'));
+  wrap?.addEventListener('click',()=>setTimeout(refresh,0));
+  refresh();
+}
+function getSubtypes(){
+  const vals=getChips('f-subtipo').filter(x=>x!=='Otro');
+  const custom=val('f-subtipo-texto').trim();
+  if(custom)vals.push(custom);
+  return vals;
+}
 
 // ── TOGGLE SWITCH ─────────────────────────────────────────────
 const swState={};
@@ -648,7 +793,7 @@ const PROP_TYPES=[
   {id:'otro',  icon:'📦',name:'Otro',            sub:'Especificar en notas'},
 ];
 const SUBTYPES={
-  casa:  ['Residencial media','Interés social','Lujo','Para remodelar','En esquina','En privada','Con negocio','Con depto adicional'],
+  casa:  ['Residencial media','Interés social','Lujo','Para remodelar','En esquina','En privada','Con negocio','Con depto adicional','Casa normal','Casa grande','Casa habitación'],
   depto: ['Planta baja','Planta alta','Con elevador','Penthouse','Loft','Estudio'],
   terre: ['Habitacional','Comercial','Mixto','Plano','Con desnivel','Irregular'],
   local: ['En plaza','Calle principal','Esquinero','Con mezzanine','Con bodega'],
@@ -658,8 +803,8 @@ const SUBTYPES={
   otro:  [],
 };
 const HAS_ROOMS=['casa','depto'];
-const ASESORES=['Ronaldo','Denisse'];
-const DOCS_L   =['Escrituras','Libre de gravamen','Avalúo reciente','Plano arquitectónico','Plano catastral','Predial al corriente','Agua al corriente','Régimen de condominio','Carta de posesión','Sin regularizar','En trámite'];
+const ASESORES=['Ronny','Denny'];
+const DOCS_L   =['Escrituras','Ejidal','Libre de gravamen','Avalúo reciente','Plano arquitectónico','Plano catastral','Predial al corriente','Agua al corriente','Régimen de condominio','Carta de posesión','Sin regularizar','En trámite'];
 const EQUIP_L  =['Tinaco','Cisterna','Aljibe','Paneles solares','Calentador solar','Tanque estacionario','Cerca eléctrica','Cámaras de seguridad','Alarma','Portón eléctrico','Elevador','Generador'];
 const SERV_L   =['Agua municipal','Luz CFE','Gas natural','Drenaje municipal','Internet / Fibra','Teléfono','Alumbrado público','Pavimento'];
 const EXTRAS_L =['Terraza','Roof garden','Azotea','Asador','Bodega interna','Cuarto servicio','Área lavado','Estudio / Oficina','Sala juegos','Cine en casa','Gym','Bar','Jacuzzi','Palapa'];
@@ -768,7 +913,7 @@ function saveCurrentStep(){
   if(s==='General'){
     F.asesor=val('f-asesor');F.fecha=val('f-fecha');
     F.dueno=val('f-dueno');F.telefono=val('f-tel');F.telefono2=val('f-tel2');
-    F.subTipo=getChips('f-subtipo');F.operacion=getChips('f-operacion');
+    F.subTipo=getSubtypes();F.operacion=getChips('f-operacion');
   }
   if(s==='Ubicación'){
     F.lugar=val('f-lugar');F.calle=val('f-calle');F.numero=val('f-numero');
@@ -850,6 +995,10 @@ function buildGeneral(){
   ${hasSub?`<div class="card">
     <div class="card-head">${pt.icon} Subtipo de ${pt.name}</div>
     <div class="chips" id="f-subtipo"></div>
+    <div class="field mt hidden" id="f-subtipo-otro">
+      <label>Otro subtipo</label>
+      <input type="text" id="f-subtipo-texto" placeholder="Escribe el subtipo de casa">
+    </div>
   </div>`:'<div id="f-subtipo" class="hidden"></div>'}
   <div class="card">
     <div class="card-head">📋 Operación</div>
@@ -1117,16 +1266,8 @@ function buildGuardar(){
     hasRooms?['Habitaciones',`${F.habPpal||1}P + ${F.habSec||2}S`]:null,
   ].filter(Boolean);
 
+  const shareText=buildShareSummary(F,captType);
   return `
-  <div class="card">
-    <div class="card-head">🤖 Análisis IA</div>
-    <button class="btn btn-primary btn-full" onclick="doAI()" id="btn-ai" style="margin-bottom:12px;">✨ Generar análisis automático</button>
-    <div id="ai-result"></div>
-    <div class="field mt">
-      <label>O escribe el análisis / potencial manualmente</label>
-      <textarea id="f-potencial" placeholder="Análisis de potencial, observaciones finales..." rows="4">${esc(F.potencial||'')}</textarea>
-    </div>
-  </div>
   <div class="card">
     <div class="card-head">✅ Resumen de captación</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
@@ -1136,7 +1277,77 @@ function buildGuardar(){
           <div style="font-size:13px;color:var(--txt);font-weight:500;">${esc(v||'—')}</div>
         </div>`).join('')}
     </div>
+    <div class="field mt">
+      <label>Ficha profesional lista para ChatGPT o para compartir</label>
+      <textarea id="capture-summary" readonly rows="16">${esc(shareText)}</textarea>
+    </div>
+    <div class="g2 mt">
+      <button class="btn btn-primary" onclick="copyCaptureSummary()">Copiar resumen</button>
+      <button class="btn btn-ghost" onclick="shareCaptureSummary()">Compartir</button>
+    </div>
   </div>`;
+}
+
+function buildShareSummary(p,type){
+  const pt=PROP_TYPES.find(x=>x.id===type);
+  const yes=v=>v?'Sí':'No';
+  const lines=[
+    'FICHA DE CAPTACIÓN INMOBILIARIA',
+    '',
+    `Tipo de propiedad: ${pt?.name||'No indicado'}`,
+    `Subtipo: ${(p.subTipo||[]).join(', ')||'No indicado'}`,
+    `Operación: ${(p.operacion||[]).join(', ')||'No indicada'}`,
+    `Propietario: ${p.dueno||'No indicado'}`,
+    `Teléfono: ${p.telefono||'No indicado'}`,
+    `Asesor: ${p.asesor||'No indicado'}`,
+    `Fecha de captación: ${p.fecha||'No indicada'}`,
+    '',
+    'UBICACIÓN',
+    `Dirección: ${[p.calle,p.numero,p.colonia,p.lugar,p.cp&&'CP '+p.cp].filter(Boolean).join(', ')||'No indicada'}`,
+    p.referencias?`Referencias: ${p.referencias}`:'',
+    p.lat&&p.lng?`Google Maps: https://maps.google.com/?q=${p.lat},${p.lng}`:p.mapsLink?`Google Maps: ${p.mapsLink}`:'',
+    '',
+    'CARACTERÍSTICAS',
+    p.m2Sup?`Terreno: ${p.m2Sup} m²`:'',
+    p.m2Const?`Construcción: ${p.m2Const} m²`:'',
+    p.frente?`Frente: ${p.frente} m`:'',
+    p.fondo?`Fondo: ${p.fondo} m`:'',
+    p.plantas?`Plantas: ${p.plantas}`:'',
+    p.antiguedad?`Antigüedad: ${p.antiguedad} años`:'',
+    HAS_ROOMS.includes(type)?`Habitaciones: ${(p.habPpal||0)+(p.habSec||0)} (${p.habPpal||0} principal y ${p.habSec||0} secundarias)`:'',
+    HAS_ROOMS.includes(type)?`Baños: ${p.banosC||0} completos y ${p.banosM||0} medios baños`:'',
+    (p.extras||[]).length?`Extras: ${p.extras.join(', ')}`:'',
+    (p.servicios||[]).length?`Servicios: ${p.servicios.join(', ')}`:'',
+    (p.equipamiento||[]).length?`Equipamiento: ${p.equipamiento.join(', ')}`:'',
+    (p.docs||[]).length?`Documentación: ${p.docs.join(', ')}`:'',
+    '',
+    'CONDICIONES COMERCIALES',
+    `Precio solicitado: ${fmtMXN(p.precioSol)}`,
+    p.precioNeg?`Precio negociable: ${fmtMXN(p.precioNeg)}`:'',
+    p.precioNuestro?`Precio sugerido por inmobiliaria: ${fmtMXN(p.precioNuestro)}`:'',
+    p.comisionPct?`Comisión: ${p.comisionPct}% (${fmtMXN(p.comisionMXN)})`:'',
+    `Contrato firmado: ${yes(p.contratoFirmado)}`,
+    `Permiso para publicar: ${yes(p.publicar!==false)}`,
+    p.vigencia?`Vigencia: ${p.vigencia}`:'',
+    p.notas?`Observaciones: ${p.notas}`:''
+  ];
+  return lines.filter((x,i)=>x!==''||lines[i-1]!=='').join('\n').trim();
+}
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);}
+  catch{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);
+    ta.select();document.execCommand('copy');ta.remove();
+  }
+}
+async function copyCaptureSummary(){
+  await copyText(document.getElementById('capture-summary')?.value||'');
+  showToast('Resumen copiado');
+}
+async function shareCaptureSummary(){
+  const text=document.getElementById('capture-summary')?.value||'';
+  if(navigator.share){try{await navigator.share({title:'Ficha de captación',text});return;}catch{}}
+  await copyText(text);showToast('Resumen copiado para compartir');
 }
 
 function calcComision(){
@@ -1164,14 +1375,16 @@ function getGPS(){
     const lat=pos.coords.latitude.toFixed(6), lng=pos.coords.longitude.toFixed(6);
     const elLat=document.getElementById('f-lat'), elLng=document.getElementById('f-lng');
     if(elLat)elLat.value=lat; if(elLng)elLng.value=lng;
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&accept-language=es`)
       .then(r=>r.json()).then(a=>{
-        const ad=a.address;
+        const ad=a.address||{};
         const el=id=>document.getElementById(id);
-        if(el('f-lugar')&&!el('f-lugar').value) el('f-lugar').value=ad.city||ad.town||'';
-        if(el('f-colonia')&&!el('f-colonia').value) el('f-colonia').value=ad.suburb||ad.neighbourhood||'';
+        if(el('f-lugar')&&!el('f-lugar').value) el('f-lugar').value=ad.city||ad.town||ad.municipality||ad.county||ad.village||ad.city_district||'';
+        if(el('f-colonia')&&!el('f-colonia').value) el('f-colonia').value=ad.suburb||ad.neighbourhood||ad.quarter||ad.residential||ad.hamlet||'';
         if(el('f-cp')&&!el('f-cp').value) el('f-cp').value=ad.postcode||'';
         if(el('f-calle')&&!el('f-calle').value) el('f-calle').value=ad.road||'';
+        if(el('f-numero')&&!el('f-numero').value) el('f-numero').value=ad.house_number||'';
+        if(el('f-maps')&&!el('f-maps').value) el('f-maps').value=`https://maps.google.com/?q=${lat},${lng}`;
       }).catch(()=>{});
     showToast('📍 Ubicación capturada');
   },()=>showToast('No se pudo obtener ubicación',true));
@@ -1206,7 +1419,7 @@ async function doAI(){
 // ── AFTER RENDER: re-init chips/switches/counters ─────────────
 function afterRender(step){
   if(step==='General'){
-    if(SUBTYPES[captType]?.length) initChips('f-subtipo',SUBTYPES[captType],true,F.subTipo||[]);
+    if(SUBTYPES[captType]?.length) initSubtypeChips();
     initChips('f-operacion',['Venta','Renta','Venta y Renta','Preventa','Cesión de derechos'],true,F.operacion||[]);
   }
   if(step==='Espacios'){
@@ -1267,6 +1480,7 @@ function saveCaptacion(){
   };
   props_=[rec,...props_];
   DB.set('inmo_p',props_);
+  saveRecordCloud('propiedad',rec).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderProps();
   updateCounts();
   showToast('✅ Captación guardada correctamente');
@@ -1337,6 +1551,14 @@ function openDetail(id){
   if(p.fotos?.length){
     html+=`<div class="card"><div class="card-head">📸 Fotos</div><div class="thumb-grid">${p.fotos.map(s=>`<img src="${s}" class="thumb" alt="">`).join('')}</div></div>`;
   }
+  html+=`<div class="card">
+    <div class="card-head">📤 Resumen para compartir</div>
+    <textarea id="detail-summary" readonly rows="14">${esc(buildShareSummary(p,p.tipo))}</textarea>
+    <div class="g2 mt">
+      <button class="btn btn-primary" onclick="copyDetailSummary()">Copiar resumen</button>
+      <button class="btn btn-ghost" onclick="shareDetailSummary()">Compartir</button>
+    </div>
+  </div>`;
   html+=`<div class="card"><div class="card-head">📋 Ficha completa</div>`;
   rows.forEach(([k,v])=>{
     html+=`<div class="detail-row"><span class="detail-key">${esc(k)}</span><span class="detail-val">${esc(String(v))}</span></div>`;
@@ -1347,11 +1569,22 @@ function openDetail(id){
   showScreen('screen-detail');
 }
 
+async function copyDetailSummary(){
+  await copyText(document.getElementById('detail-summary')?.value||'');
+  showToast('Resumen copiado');
+}
+async function shareDetailSummary(){
+  const text=document.getElementById('detail-summary')?.value||'';
+  if(navigator.share){try{await navigator.share({title:'Ficha de captación',text});return;}catch{}}
+  await copyText(text);showToast('Resumen copiado para compartir');
+}
+
 function deleteProp(){
   if(!curDetail)return;
   if(!confirm('¿Eliminar esta propiedad?'))return;
   props_=props_.filter(p=>p.id!==curDetail);
   DB.set('inmo_p',props_);
+  deleteRecordCloud(curDetail).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderProps();updateCounts();
   showToast('🗑 Propiedad eliminada');
   showScreen('screen-main');
@@ -1437,6 +1670,8 @@ function renderVisitas(){
 function renderCRM(){
   document.getElementById('crm-stats').innerHTML=[
     {icon:'🏠',label:'Propiedades captadas',val:props_.length,color:'var(--blu)'},
+    {icon:'👤',label:'Captaciones de Ronny',val:props_.filter(p=>['Ronny','Ronnie','Ronaldo'].includes(p.asesor)).length,color:'var(--blu)'},
+    {icon:'👤',label:'Captaciones de Denny',val:props_.filter(p=>['Denny','Denise González','Denisse'].includes(p.asesor)).length,color:'var(--gld)'},
     {icon:'🔍',label:'Clientes buscando',val:demandas.length,color:'var(--gld)'},
     {icon:'📅',label:'Visitas agendadas',val:visitas.length,color:'var(--grn)'},
     {icon:'✅',label:'Contratos firmados',val:props_.filter(p=>p.contratoFirmado).length,color:'var(--grn)'},
@@ -1488,6 +1723,7 @@ function saveDemanda(){
   };
   demandas=[rec,...demandas];
   DB.set('inmo_d',demandas);
+  saveRecordCloud('demanda',rec).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderDemanda();updateCounts();
   showToast('✅ Demanda guardada');
   // reset
@@ -1530,6 +1766,7 @@ function saveVisita(){
   };
   visitas=[rec,...visitas];
   DB.set('inmo_v',visitas);
+  saveRecordCloud('visita',rec).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderVisitas();updateCounts();
   showToast('📅 Visita agendada');
   ['vis-nombre','vis-tel','vis-hora','vis-notas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -1554,6 +1791,9 @@ renderProps();
 renderDemanda();
 renderVisitas();
 updateCounts();
+syncFromCloud();
+setInterval(syncFromCloud,15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncFromCloud();});
 </script>
 </body>
 </html>
