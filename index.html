@@ -309,6 +309,25 @@ input[readonly]{opacity:.55;}
 /* ── GPS ROW ── */
 .gps-row{display:flex;gap:8px;}
 .gps-row input{flex:1;}
+
+/* ── EXTENDED CAPTURE ── */
+.fold{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r3);margin-bottom:12px;overflow:hidden;}
+.fold-head{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:0;color:var(--txt);padding:15px 16px;font-weight:700;text-align:left;}
+.fold-head span:last-child{color:var(--dim);font-size:18px;}
+.fold-body{display:none;padding:0 16px 16px;}
+.fold.open .fold-body{display:block;}
+.fold.open .fold-head span:last-child{transform:rotate(180deg);}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.filter-actions{display:flex;gap:8px;margin-bottom:14px;}
+.status-bar{display:flex;overflow-x:auto;gap:7px;padding:10px 0 2px;}
+.status-pill{flex:0 0 auto;border:1px solid var(--ln);background:var(--s2);color:var(--sub);border-radius:18px;padding:6px 10px;font-size:11px;}
+.status-pill.on{border-color:var(--blu);background:var(--bla);color:#9aa8ff;}
+.prop-card.paused{opacity:.52;filter:saturate(.6);}
+.private-note{border-left:3px solid var(--amb);padding-left:10px;color:var(--sub);font-size:12px;margin-bottom:10px;}
+.calc-warning{color:var(--red);font-size:12px;margin-top:7px;}
+.section-note{color:var(--dim);font-size:12px;margin:0 0 10px;}
+.btn-whatsapp{background:#1fa855;color:#fff;}
+@media(max-width:480px){.filter-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -341,6 +360,18 @@ input[readonly]{opacity:.55;}
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
       <input type="text" id="search-props" placeholder="Buscar dueño, colonia, tipo..." oninput="renderProps()">
+    </div>
+    <div class="filter-grid">
+      <select id="filter-asesor" onchange="renderProps()"><option value="">Todos los asesores</option></select>
+      <select id="filter-estado" onchange="renderProps()"><option value="">Todos los estados</option></select>
+      <select id="filter-tipo" onchange="renderProps()"><option value="">Todos los tipos</option></select>
+      <input type="text" id="filter-zona" placeholder="Zona / colonia" oninput="renderProps()">
+      <input type="number" id="filter-precio-min" placeholder="Precio mínimo" oninput="renderProps()">
+      <input type="number" id="filter-precio-max" placeholder="Precio máximo" oninput="renderProps()">
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-sm" onclick="clearPropFilters()">Limpiar filtros</button>
+      <button class="btn btn-sm" onclick="toggleRetired()" id="btn-retired">Ver retiradas</button>
     </div>
     <button class="btn btn-primary btn-full" onclick="goTypeSelect()" style="margin-bottom:14px;">+ Nueva captación</button>
     <div id="list-props"></div>
@@ -421,7 +452,8 @@ input[readonly]{opacity:.55;}
   <div class="topbar">
     <button class="btn btn-sm" onclick="showScreen('screen-main')">← Volver</button>
     <div class="topbar-title" id="detail-title">Propiedad</div>
-    <button class="btn btn-sm" style="color:var(--red);border-color:var(--red);" onclick="deleteProp()">🗑</button>
+    <button class="btn btn-sm" onclick="editCurrentProp()">Editar</button>
+    <button class="btn btn-sm" style="color:var(--red);border-color:var(--red);" onclick="deleteProp()">Retirar</button>
   </div>
   <div class="page" id="detail-page"></div>
 </div>
@@ -656,20 +688,27 @@ async function syncFromCloud(showResult=false){
       demanda:rows.filter(x=>x.kind==='demanda').map(x=>x.payload),
       visita:rows.filter(x=>x.kind==='visita').map(x=>x.payload)
     };
-    const merge=(local,online)=>[...new Map([...online,...local].map(x=>[x.id,x])).values()]
-      .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    const recordTime=x=>String(x.updatedAt||x.createdAt||'');
+    const merge=(local,online)=>{
+      const all=new Map();
+      [...local,...online].forEach(x=>{
+        const current=all.get(x.id);
+        if(!current||recordTime(x)>=recordTime(current))all.set(x.id,x);
+      });
+      return [...all.values()].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    };
     props_=merge(props_,remote.propiedad);
     demandas=merge(demandas,remote.demanda);
     visitas=merge(visitas,remote.visita);
     DB.set('inmo_p',props_);DB.set('inmo_d',demandas);DB.set('inmo_v',visitas);
-    const remoteIds=new Set(rows.map(x=>x.id));
+    const remoteById=new Map(rows.map(x=>[x.id,x.payload]));
     const pending=[
-      ...props_.filter(x=>!remoteIds.has(x.id)).map(x=>saveRecordCloud('propiedad',x)),
-      ...demandas.filter(x=>!remoteIds.has(x.id)).map(x=>saveRecordCloud('demanda',x)),
-      ...visitas.filter(x=>!remoteIds.has(x.id)).map(x=>saveRecordCloud('visita',x))
+      ...props_.filter(x=>!remoteById.has(x.id)||recordTime(x)>recordTime(remoteById.get(x.id))).map(x=>saveRecordCloud('propiedad',x)),
+      ...demandas.filter(x=>!remoteById.has(x.id)||recordTime(x)>recordTime(remoteById.get(x.id))).map(x=>saveRecordCloud('demanda',x)),
+      ...visitas.filter(x=>!remoteById.has(x.id)||recordTime(x)>recordTime(remoteById.get(x.id))).map(x=>saveRecordCloud('visita',x))
     ];
     await Promise.all(pending);
-    renderProps();renderDemanda();renderVisitas();updateCounts();
+    initPropFilters();renderProps();renderDemanda();renderVisitas();updateCounts();
     setSyncBadge(true,'COMPARTIDO');
     if(showResult)showToast('Datos compartidos y actualizados');
   }catch(e){
@@ -683,6 +722,8 @@ let props_   = DB.get('inmo_p');
 let demandas = DB.get('inmo_d');
 let visitas  = DB.get('inmo_v');
 let curDetail = null;
+let editingId = null;
+let showRetired = false;
 
 // ── HELPERS ───────────────────────────────────────────────────
 const uid   = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -761,6 +802,7 @@ function initSubtypeChips(){
   refresh();
 }
 function getSubtypes(){
+  if(!(SUBTYPES[captType]||[]).length)return[];
   const vals=getChips('f-subtipo').filter(x=>x!=='Otro');
   const custom=val('f-subtipo-texto').trim();
   if(custom)vals.push(custom);
@@ -778,6 +820,10 @@ function toggleSw(id){
   if(extra)extra.classList.toggle('show',swState[id]);
 }
 function getSw(id){return!!swState[id];}
+function toggleFold(id){
+  const box=document.getElementById(id);
+  if(box)box.classList.toggle('open');
+}
 
 // ═══════════════════════════════════════════════════════════════
 // DATA
@@ -806,7 +852,7 @@ const HAS_ROOMS=['casa','depto'];
 const ASESORES=['Ronny','Denny'];
 const DOCS_L   =['Escrituras','Ejidal','Libre de gravamen','Avalúo reciente','Plano arquitectónico','Plano catastral','Predial al corriente','Agua al corriente','Régimen de condominio','Carta de posesión','Sin regularizar','En trámite'];
 const EQUIP_L  =['Tinaco','Cisterna','Aljibe','Paneles solares','Calentador solar','Tanque estacionario','Cerca eléctrica','Cámaras de seguridad','Alarma','Portón eléctrico','Elevador','Generador'];
-const SERV_L   =['Agua municipal','Luz CFE','Gas natural','Drenaje municipal','Internet / Fibra','Teléfono','Alumbrado público','Pavimento'];
+const SERV_L   =['Agua municipal','Luz CFE','Gas natural','Drenaje municipal','Internet / Fibra','Teléfono','Alumbrado público','Pavimento','Otros'];
 const EXTRAS_L =['Terraza','Roof garden','Azotea','Asador','Bodega interna','Cuarto servicio','Área lavado','Estudio / Oficina','Sala juegos','Cine en casa','Gym','Bar','Jacuzzi','Palapa'];
 const COCINA_L =['Cubierta granito','Cubierta cuarzo','Cubierta mármol','Muebles madera','Muebles melanina','Espacio 2 refrigeradores','Desayunador','Isla de cocina','Campana extractora'];
 const HAB_PPAL =['Baño en suite','Medio baño','Vestidor','Walk-in closet','Clóset','Cama matrimonial','Cama queen','Cama king','Balcón privado','Vista exterior','A/C','Sala de estar'];
@@ -815,6 +861,13 @@ const COCHERA_L=['Techada','Descubierta','Subterránea','En privada'];
 const DEM_OP   =['Comprar','Rentar'];
 const DEM_REQ  =['Cochera','Jardín','Alberca','Cuarto servicio','Planta baja','Sin vecinos arriba','Escrituras en orden','Acepta crédito','Cerca de escuelas','Zona comercial'];
 const URG_L    =['Urgente — menos de 1 mes','Normal — 1 a 3 meses','Sin prisa — más de 3 meses'];
+const CREDIT_L =['Crédito bancario','Infonavit','Cofinavit','Fovissste','Fovissste para Todos','Unamos Créditos','Crédito conyugal','Otro'];
+const PERMUTA_L=['Casa','Terreno','Departamento','Vehículo','Local','Otro'];
+const STATUS_L =['Captación en proceso','Lista para publicar','Publicada','En negociación','Apartada','Vendida','Pausada','Retirada'];
+const LEGAL_L  =['Propiedad privada','Ejidal','Comunal','Posesión','Cesión de derechos'];
+const LEGAL_STATUS_L=['Libre de gravamen','Gravado','Hipoteca','En regularización','En revisión'];
+const LAND_ACCESS_L=['Pavimentado','Terracería','Ambos'];
+const LAND_LOCATION_L=['En esquina','Media cuadra','Avenida principal','Calle secundaria','Privada','Frente a área verde','Frente a carretera','Otro'];
 
 // ═══════════════════════════════════════════════════════════════
 // TYPE SELECTOR
@@ -843,6 +896,8 @@ function goTypeSelect(){
 
 function startCaptacion(){
   if(!selectedType)return;
+  editingId=null;
+  Object.keys(F).forEach(k=>delete F[k]);
   initCaptForm(selectedType);
   showScreen('screen-capt');
 }
@@ -856,11 +911,13 @@ function initCaptForm(type){
   captType=type;
   captStep=0;
   captThumbs=[];
+  Object.keys(swState).forEach(k=>delete swState[k]);
+  Object.keys(ctrVals).forEach(k=>delete ctrVals[k]);
   const pt=PROP_TYPES.find(x=>x.id===type);
   const hasRooms=HAS_ROOMS.includes(type);
   captSteps=hasRooms
-    ?['General','Ubicación','Medidas','Espacios','Servicios','Precios','Guardar']
-    :['General','Ubicación','Medidas','Servicios','Precios','Guardar'];
+    ?['General','Ubicación','Medidas','Espacios','Servicios','Precios','Seguimiento','Guardar']
+    :['General','Ubicación','Medidas','Servicios','Precios','Seguimiento','Guardar'];
 
   document.getElementById('capt-title').innerHTML=`${pt.icon} <em style="color:var(--gld);font-style:normal;">${pt.name}</em>`;
   renderStepBar();
@@ -876,7 +933,7 @@ function renderStepBar(){
   document.getElementById('capt-step-label').textContent=captSteps[captStep];
 }
 
-function goStep(i){captStep=i;renderStepBar();renderCaptStep();}
+function goStep(i){saveCurrentStep();captStep=i;renderStepBar();renderCaptStep();}
 
 function captPrev(){if(captStep>0){captStep--;renderStepBar();renderCaptStep();}}
 function captNext(){if(captStep<captSteps.length-1){captStep++;renderStepBar();renderCaptStep();}}
@@ -898,11 +955,24 @@ function renderCaptStep(){
   if(s==='Espacios')   page.innerHTML=buildEspacios();
   if(s==='Servicios')  page.innerHTML=buildServicios();
   if(s==='Precios')    page.innerHTML=buildPrecios();
+  if(s==='Seguimiento') page.innerHTML=buildSeguimiento();
   if(s==='Guardar')    page.innerHTML=buildGuardar();
+  if(s!=='Seguimiento')page.insertAdjacentHTML('afterbegin',buildStatusHeader());
 
   // re-init chips/switches/counters after innerHTML
   afterRender(s);
   window.scrollTo(0,0);
+}
+
+function buildStatusHeader(){
+  return `<div class="card"><div class="card-head">📍 Estado de captación</div>
+    <div class="status-bar">${STATUS_L.map(x=>`<button type="button" class="status-pill${(F.estado||'Captación en proceso')===x?' on':''}" onclick="quickStatus('${x.replace(/'/g,"\\'")}',this)">${x}</button>`).join('')}</div>
+  </div>`;
+}
+function quickStatus(status,button){
+  F.estado=status;
+  button.parentElement.querySelectorAll('.status-pill').forEach(x=>x.classList.remove('on'));
+  button.classList.add('on');
 }
 
 // ── SAVE STATE helpers (persist form values across steps) ─────
@@ -911,7 +981,7 @@ const F={}; // form state object
 function saveCurrentStep(){
   const s=captSteps[captStep];
   if(s==='General'){
-    F.asesor=val('f-asesor');F.fecha=val('f-fecha');
+    F.asesor=val('f-asesor')==='Otro'?val('f-asesor-otro').trim():val('f-asesor');F.fecha=val('f-fecha');
     F.dueno=val('f-dueno');F.telefono=val('f-tel');F.telefono2=val('f-tel2');
     F.subTipo=getSubtypes();F.operacion=getChips('f-operacion');
   }
@@ -925,6 +995,9 @@ function saveCurrentStep(){
     F.ladoIzq=val('f-izq');F.ladoDer=val('f-der');
     F.m2Sup=val('f-m2sup');F.m2Const=val('f-m2con');
     F.plantas=val('f-plantas');F.antiguedad=val('f-ant');
+    F.formaTerreno=val('f-forma-terreno');F.usoSuelo=val('f-uso-suelo');
+    F.topografia=val('f-topografia');F.accesosTerreno=getChips('f-acceso-terreno');
+    F.ubicacionFisica=getChips('f-ubicacion-fisica');F.ubicacionFisicaOtro=val('f-ubicacion-otro');
   }
   if(s==='Espacios'){
     F.habPpal=getCtr('c-habppal');F.habSec=getCtr('c-habsec');
@@ -943,6 +1016,15 @@ function saveCurrentStep(){
     F.servicios=getChips('f-servicios');F.equipamiento=getChips('f-equip');
     F.tinacoL=val('f-tinacol');F.cistL=val('f-cistl');
     F.docs=getChips('f-docs');F.llaves=val('f-llaves');
+    F.regimenPropiedad=getChips('f-regimen');F.estadoJuridico=getChips('f-estado-juridico');
+    F.ocupacion=val('f-ocupacion');F.horariosVisita=val('f-horarios-visita');
+    F.avisoPrevio=val('f-aviso-previo');F.tiempoAviso=val('f-tiempo-aviso');
+    F.finSemana=val('f-fin-semana');F.accesoOtro=val('f-acceso-otro');
+    F.estadoConservacion=val('f-conservacion');F.remodelaciones=val('f-remodelaciones');
+    F.remodelacionesPendientes=val('f-remodelaciones-pendientes');F.danos=val('f-danos');
+    F.reparaciones=val('f-reparaciones');F.observacionesInternas=val('f-observaciones-internas');
+    F.mueblesIncluidos=val('f-muebles');F.aceptaMascotas=val('f-mascotas');
+    F.restricciones=val('f-restricciones');
   }
   if(s==='Precios'){
     F.precioSol=val('f-preciosol');F.precioNeg=val('f-precioneg');
@@ -952,9 +1034,21 @@ function saveCurrentStep(){
     F.contratoFirmado=val('f-contrato')==='si';
     F.publicar=val('f-publicar')==='si';
     F.notas=val('f-notas');
+    F.financiamientoAbierto=document.getElementById('fold-financiamiento')?.classList.contains('open')||false;
+    F.precioFinanciado=val('f-precio-fin');F.enganche=val('f-enganche');
+    F.meses=val('f-meses')==='Personalizado'?val('f-meses-custom'):val('f-meses');
+    F.mensualidad=val('f-mensualidad');F.pagosAnticipados=val('f-pagos-anticipados');
+    F.creditos=getChips('f-creditos').filter(x=>x!=='Otro');F.creditoOtro=val('f-credito-otro');
+    if(F.creditoOtro)F.creditos.push(F.creditoOtro);
+    F.rentaMensual=val('f-renta');F.rentaObservaciones=val('f-renta-obs');
+    F.permuta=getChips('f-permuta').filter(x=>x!=='Otro');F.permutaOtro=val('f-permuta-otro');
+    if(F.permutaOtro)F.permuta.push(F.permutaOtro);
+    F.creditosHabilitados=document.getElementById('fold-creditos')?.classList.contains('open')||false;
+    F.rentaHabilitada=document.getElementById('fold-renta')?.classList.contains('open')||false;
+    F.permutaHabilitada=document.getElementById('fold-permuta')?.classList.contains('open')||false;
   }
-  if(s==='Guardar'){
-    F.potencial=val('f-potencial');
+  if(s==='Seguimiento'){
+    F.estado=val('f-estado')||'Captación en proceso';
   }
 }
 
@@ -975,7 +1069,11 @@ function buildGeneral(){
     <div class="card-head">🗂 Control interno</div>
     <div class="g2">
       <div class="field"><label>Asesor <span class="req">*</span></label>
-        <select id="f-asesor">${ASESORES.map(a=>`<option value="${a}"${F.asesor===a?' selected':''}>${a}</option>`).join('')}</select>
+        <select id="f-asesor" onchange="document.getElementById('asesor-otro-wrap').classList.toggle('hidden',this.value!=='Otro')">
+          ${ASESORES.map(a=>`<option value="${a}"${F.asesor===a?' selected':''}>${a}</option>`).join('')}
+          <option value="Otro"${F.asesor&&!ASESORES.includes(F.asesor)?' selected':''}>Otro asesor</option>
+        </select>
+        <div id="asesor-otro-wrap" class="mt${F.asesor&&!ASESORES.includes(F.asesor)?'':' hidden'}"><input type="text" id="f-asesor-otro" placeholder="Nombre del asesor" value="${F.asesor&&!ASESORES.includes(F.asesor)?esc(F.asesor):''}"></div>
       </div>
       <div class="field"><label>Fecha de captación</label>
         <input type="date" id="f-fecha" value="${F.fecha||today()}">
@@ -1045,6 +1143,7 @@ function buildUbicacion(){
 
 function buildMedidas(){
   const hasRooms=HAS_ROOMS.includes(captType);
+  const isLand=captType==='terre';
   return `
   <div class="card">
     <div class="card-head">📐 Linderos (metros lineales)</div>
@@ -1058,6 +1157,9 @@ function buildMedidas(){
       <span>M² superficie calculada</span>
       <span id="m2-calc">${F.m2Sup?F.m2Sup+' m²':'—'}</span>
     </div>
+    ${isLand?`<div class="field mt"><label>Forma del terreno</label>
+      <select id="f-forma-terreno"><option value="">Seleccionar</option>${['Regular','Irregular'].map(x=>`<option${F.formaTerreno===x?' selected':''}>${x}</option>`).join('')}</select>
+    </div>`:'<input id="f-forma-terreno" class="hidden">'}
   </div>
   <div class="card">
     <div class="card-head">🏗 Construcción</div>
@@ -1074,7 +1176,19 @@ function buildMedidas(){
       </div>
       <div class="field"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0=nuevo" value="${esc(F.antiguedad||'')}"></div>
     </div>`:'<input id="f-plantas" class="hidden"><input id="f-ant" class="hidden">'}
-  </div>`;
+  </div>
+  ${isLand?`<div class="card">
+    <div class="card-head">🏗 Urbanización e ingeniería</div>
+    <div class="g2">
+      <div class="field"><label>Uso de suelo</label><input type="text" id="f-uso-suelo" placeholder="Habitacional, comercial, no confirmado..." value="${esc(F.usoSuelo||'')}"></div>
+      <div class="field"><label>Topografía</label><input type="text" id="f-topografia" placeholder="Plano, pendiente, desnivel..." value="${esc(F.topografia||'')}"></div>
+    </div>
+    <label style="font-size:12px;color:var(--sub);display:block;margin:14px 0 8px;">Accesos</label>
+    <div class="chips" id="f-acceso-terreno"></div>
+    <label style="font-size:12px;color:var(--sub);display:block;margin:14px 0 8px;">Ubicación física</label>
+    <div class="chips" id="f-ubicacion-fisica"></div>
+    <div id="ubicacion-otro-wrap" class="field mt hidden"><label>Otra ubicación física</label><input id="f-ubicacion-otro" type="text" value="${esc(F.ubicacionFisicaOtro||'')}"></div>
+  </div>`:'<div class="hidden"><input id="f-uso-suelo"><input id="f-topografia"><div id="f-acceso-terreno"></div><div id="f-ubicacion-fisica"></div><input id="f-ubicacion-otro"></div>'}`;
 }
 
 function calcM2(){
@@ -1160,6 +1274,7 @@ function buildCtr(id,label,val){
 }
 
 function buildServicios(){
+  const housing=HAS_ROOMS.includes(captType);
   return `
   <div class="card">
     <div class="card-head">⚡ Servicios disponibles</div>
@@ -1176,16 +1291,53 @@ function buildServicios(){
     <div class="chips" id="f-docs"></div>
   </div>
   <div class="card">
+    <div class="card-head">⚖ Situación legal</div>
+    <label style="font-size:12px;color:var(--sub);display:block;margin-bottom:8px;">Régimen de propiedad</label>
+    <div class="chips" id="f-regimen"></div>
+    <label style="font-size:12px;color:var(--sub);display:block;margin:14px 0 8px;">Estado jurídico</label>
+    <div class="chips" id="f-estado-juridico"></div>
+  </div>
+  <div class="card">
     <div class="card-head">🔑 Llaves y accesos</div>
     <textarea id="f-llaves" placeholder="Ej: 2 juegos de llaves, portón automático, código de alarma...">${esc(F.llaves||'')}</textarea>
-  </div>`;
+    <div class="field mt"><label>Estado de ocupación</label>
+      <select id="f-ocupacion" onchange="toggleVisitFields()">
+        <option value="">Seleccionar</option>
+        ${['Habitada','Desocupada','En renta'].map(x=>`<option${F.ocupacion===x?' selected':''}>${x}</option>`).join('')}
+      </select>
+    </div>
+    <div id="visit-fields" class="mt hidden">
+      <div class="field"><label>Horarios disponibles para visita</label><input id="f-horarios-visita" type="text" value="${esc(F.horariosVisita||'')}"></div>
+      <div class="g2 mt">
+        <div class="field"><label>¿Requiere aviso previo?</label><select id="f-aviso-previo"><option value="">Seleccionar</option><option${F.avisoPrevio==='Sí'?' selected':''}>Sí</option><option${F.avisoPrevio==='No'?' selected':''}>No</option></select></div>
+        <div class="field"><label>Tiempo mínimo para avisar</label><input id="f-tiempo-aviso" type="text" placeholder="Ej. 24 horas" value="${esc(F.tiempoAviso||'')}"></div>
+      </div>
+      <div class="field mt"><label>¿Se puede visitar en fin de semana?</label><select id="f-fin-semana"><option value="">Seleccionar</option><option${F.finSemana==='Sí'?' selected':''}>Sí</option><option${F.finSemana==='No'?' selected':''}>No</option></select></div>
+      <div class="field mt"><label>Otra indicación</label><input id="f-acceso-otro" type="text" value="${esc(F.accesoOtro||'')}"></div>
+    </div>
+  </div>
+  ${housing?`<div class="card">
+    <div class="card-head">🏠 Detalles de la vivienda</div>
+    <div class="private-note">Uso exclusivamente interno. Estos datos no aparecen en la versión pública.</div>
+    <div class="field"><label>Estado de conservación</label><input id="f-conservacion" type="text" value="${esc(F.estadoConservacion||'')}"></div>
+    <div class="field mt"><label>Remodelaciones realizadas</label><textarea id="f-remodelaciones">${esc(F.remodelaciones||'')}</textarea></div>
+    <div class="field mt"><label>Remodelaciones pendientes</label><textarea id="f-remodelaciones-pendientes">${esc(F.remodelacionesPendientes||'')}</textarea></div>
+    <div class="field mt"><label>Daños detectados</label><textarea id="f-danos">${esc(F.danos||'')}</textarea></div>
+    <div class="field mt"><label>Reparaciones pendientes</label><textarea id="f-reparaciones">${esc(F.reparaciones||'')}</textarea></div>
+    <div class="field mt"><label>Observaciones internas</label><textarea id="f-observaciones-internas">${esc(F.observacionesInternas||'')}</textarea></div>
+    <div class="field mt"><label>Muebles incluidos</label><textarea id="f-muebles">${esc(F.mueblesIncluidos||'')}</textarea></div>
+    ${captType==='depto'?`<div class="g2 mt">
+      <div class="field"><label>¿Acepta mascotas?</label><select id="f-mascotas"><option value="">Seleccionar</option><option${F.aceptaMascotas==='Sí'?' selected':''}>Sí</option><option${F.aceptaMascotas==='No'?' selected':''}>No</option></select></div>
+      <div class="field"><label>Restricciones adicionales</label><input id="f-restricciones" type="text" value="${esc(F.restricciones||'')}"></div>
+    </div>`:'<input id="f-mascotas" class="hidden"><input id="f-restricciones" class="hidden">'}
+  </div>`:'<div class="hidden"><input id="f-conservacion"><textarea id="f-remodelaciones"></textarea><textarea id="f-remodelaciones-pendientes"></textarea><textarea id="f-danos"></textarea><textarea id="f-reparaciones"></textarea><textarea id="f-observaciones-internas"></textarea><textarea id="f-muebles"></textarea><input id="f-mascotas"><input id="f-restricciones"></div>'}`;
 }
 
 function buildPrecios(){
   return `
   <div class="card">
     <div class="card-head">💰 Precios</div>
-    <div class="field"><label>Precio solicitado por el dueño</label>
+    <div class="field"><label>Precio del propietario</label>
       <div class="price-wrap"><span class="price-prefix">$</span>
         <input type="number" id="f-preciosol" placeholder="0" value="${esc(F.precioSol||'')}" oninput="calcComision()">
       </div>
@@ -1194,9 +1346,56 @@ function buildPrecios(){
       <div class="field"><label>Precio negociable</label>
         <div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-precioneg" placeholder="0" value="${esc(F.precioNeg||'')}"></div>
       </div>
-      <div class="field"><label>Precio por nosotros</label>
+      <div class="field"><label>Precio de nosotros</label>
         <div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-precionues" placeholder="0" value="${esc(F.precioNuestro||'')}"></div>
       </div>
+    </div>
+  </div>
+  <div class="fold${F.financiamientoAbierto?' open':''}" id="fold-financiamiento">
+    <button type="button" class="fold-head" onclick="toggleFold('fold-financiamiento')"><span>FINANCIAMIENTO</span><span>⌄</span></button>
+    <div class="fold-body">
+      <div class="g2">
+        <div class="field"><label>Precio financiado</label><div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-precio-fin" value="${esc(F.precioFinanciado||'')}" oninput="calcMensualidad()"></div></div>
+        <div class="field"><label>Enganche</label><div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-enganche" value="${esc(F.enganche||'')}" oninput="calcMensualidad()"></div></div>
+      </div>
+      <div class="g2 mt">
+        <div class="field"><label>Número de mensualidades</label>
+          <select id="f-meses" onchange="toggleCustomMonths();calcMensualidad()">
+            <option value="">Seleccionar</option>
+          ${['12','24','36'].map(x=>`<option value="${x}"${String(F.meses)===x?' selected':''}>${x} meses</option>`).join('')}
+          <option${F.meses&&!['12','24','36'].includes(String(F.meses))?' selected':''}>Personalizado</option>
+          </select>
+        </div>
+        <div class="field hidden" id="custom-months-wrap"><label>Meses personalizados</label><input type="number" min="1" id="f-meses-custom" value="${!['12','24','36'].includes(String(F.meses||''))?esc(F.meses||''):''}" oninput="calcMensualidad()"></div>
+      </div>
+      <div class="g2 mt">
+        <div class="field"><label>Mensualidad calculada</label><div class="price-wrap"><span class="price-prefix">$</span><input readonly type="number" id="f-mensualidad" value="${esc(F.mensualidad||'')}"></div></div>
+        <div class="field"><label>Acepta pagos anticipados</label><select id="f-pagos-anticipados"><option value="">Seleccionar</option><option${F.pagosAnticipados==='Sí'?' selected':''}>Sí</option><option${F.pagosAnticipados==='No'?' selected':''}>No</option></select></div>
+      </div>
+      <div id="finance-warning" class="calc-warning"></div>
+    </div>
+  </div>
+  <div class="fold${F.creditosHabilitados?' open':''}" id="fold-creditos">
+    <button type="button" class="fold-head" onclick="toggleFold('fold-creditos')"><span>CRÉDITOS${['casa','depto','local','bodega'].includes(captType)?'':' · EXCEPCIÓN'}</span><span>⌄</span></button>
+    <div class="fold-body">
+      <p class="section-note">${captType==='terre'?'Habilita esta sección sólo cuando el terreno acepte algún crédito.':'Selecciona todos los créditos aceptados.'}</p>
+      <div class="chips" id="f-creditos"></div>
+      <div class="field mt hidden" id="credito-otro-wrap"><label>Otro crédito</label><input type="text" id="f-credito-otro" value="${esc(F.creditoOtro||'')}"></div>
+    </div>
+  </div>
+  <div class="fold${F.rentaHabilitada?' open':''}" id="fold-renta">
+    <button type="button" class="fold-head" onclick="toggleFold('fold-renta')"><span>RENTA${['bodega','rancho'].includes(captType)?' · RECOMENDADO':' · EXCEPCIÓN'}</span><span>⌄</span></button>
+    <div class="fold-body">
+      <div class="field"><label>Precio de renta mensual</label><div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-renta" value="${esc(F.rentaMensual||'')}"></div></div>
+      <div class="field mt"><label>Observaciones de renta</label><textarea id="f-renta-obs">${esc(F.rentaObservaciones||'')}</textarea></div>
+    </div>
+  </div>
+  <div class="fold${F.permutaHabilitada?' open':''}" id="fold-permuta">
+    <button type="button" class="fold-head" onclick="toggleFold('fold-permuta')"><span>PERMUTA / BIENES A CUENTA</span><span>⌄</span></button>
+    <div class="fold-body">
+      <label style="font-size:12px;color:var(--sub);display:block;margin-bottom:8px;">¿Qué bienes acepta a cuenta?</label>
+      <div class="chips" id="f-permuta"></div>
+      <div class="field mt hidden" id="permuta-otro-wrap"><label>Descripción de otro bien</label><input type="text" id="f-permuta-otro" value="${esc(F.permutaOtro||'')}"></div>
     </div>
   </div>
   <div class="card">
@@ -1251,6 +1450,16 @@ function buildPrecios(){
   </div>`;
 }
 
+function buildSeguimiento(){
+  return `<div class="card">
+    <div class="card-head">📍 Seguimiento de captación</div>
+    <p class="section-note">La propiedad seguirá guardada aunque cambie de estado.</p>
+    <div class="status-bar">${STATUS_L.map(x=>`<button type="button" class="status-pill${(F.estado||'Captación en proceso')===x?' on':''}" onclick="selectStatus('${x.replace(/'/g,"\\'")}',this)">${x}</button>`).join('')}</div>
+    <input type="hidden" id="f-estado" value="${esc(F.estado||'Captación en proceso')}">
+    <div class="private-note mt">Pausada permanece visible y atenuada. Retirada queda fuera del inventario activo y de las búsquedas normales.</div>
+  </div>`;
+}
+
 function buildGuardar(){
   const pt=PROP_TYPES.find(x=>x.id===captType);
   const hasRooms=HAS_ROOMS.includes(captType);
@@ -1278,11 +1487,11 @@ function buildGuardar(){
         </div>`).join('')}
     </div>
     <div class="field mt">
-      <label>Ficha profesional lista para ChatGPT o para compartir</label>
+      <label>Versión pública lista para ChatGPT o para compartir</label>
       <textarea id="capture-summary" readonly rows="16">${esc(shareText)}</textarea>
     </div>
     <div class="g2 mt">
-      <button class="btn btn-primary" onclick="copyCaptureSummary()">Copiar resumen</button>
+      <button class="btn btn-primary" onclick="copyCaptureSummary()">Copiar versión pública</button>
       <button class="btn btn-ghost" onclick="shareCaptureSummary()">Compartir</button>
     </div>
   </div>`;
@@ -1290,22 +1499,15 @@ function buildGuardar(){
 
 function buildShareSummary(p,type){
   const pt=PROP_TYPES.find(x=>x.id===type);
-  const yes=v=>v?'Sí':'No';
   const lines=[
-    'FICHA DE CAPTACIÓN INMOBILIARIA',
+    'FICHA PÚBLICA DE PROPIEDAD',
     '',
     `Tipo de propiedad: ${pt?.name||'No indicado'}`,
     `Subtipo: ${(p.subTipo||[]).join(', ')||'No indicado'}`,
     `Operación: ${(p.operacion||[]).join(', ')||'No indicada'}`,
-    `Propietario: ${p.dueno||'No indicado'}`,
-    `Teléfono: ${p.telefono||'No indicado'}`,
-    `Asesor: ${p.asesor||'No indicado'}`,
-    `Fecha de captación: ${p.fecha||'No indicada'}`,
     '',
     'UBICACIÓN',
-    `Dirección: ${[p.calle,p.numero,p.colonia,p.lugar,p.cp&&'CP '+p.cp].filter(Boolean).join(', ')||'No indicada'}`,
-    p.referencias?`Referencias: ${p.referencias}`:'',
-    p.lat&&p.lng?`Google Maps: https://maps.google.com/?q=${p.lat},${p.lng}`:p.mapsLink?`Google Maps: ${p.mapsLink}`:'',
+    `Zona: ${[p.colonia,p.lugar].filter(Boolean).join(', ')||'Consultar'}`,
     '',
     'CARACTERÍSTICAS',
     p.m2Sup?`Terreno: ${p.m2Sup} m²`:'',
@@ -1319,19 +1521,44 @@ function buildShareSummary(p,type){
     (p.extras||[]).length?`Extras: ${p.extras.join(', ')}`:'',
     (p.servicios||[]).length?`Servicios: ${p.servicios.join(', ')}`:'',
     (p.equipamiento||[]).length?`Equipamiento: ${p.equipamiento.join(', ')}`:'',
-    (p.docs||[]).length?`Documentación: ${p.docs.join(', ')}`:'',
+    p.formaTerreno?`Forma del terreno: ${p.formaTerreno}`:'',
+    p.usoSuelo?`Uso de suelo: ${p.usoSuelo}`:'',
+    p.topografia?`Topografía: ${p.topografia}`:'',
+    (p.accesosTerreno||[]).length?`Accesos: ${p.accesosTerreno.join(', ')}`:'',
+    (p.ubicacionFisica||[]).length?`Ubicación física: ${p.ubicacionFisica.filter(x=>x!=='Otro').concat(p.ubicacionFisicaOtro||[]).join(', ')}`:'',
     '',
     'CONDICIONES COMERCIALES',
-    `Precio solicitado: ${fmtMXN(p.precioSol)}`,
-    p.precioNeg?`Precio negociable: ${fmtMXN(p.precioNeg)}`:'',
-    p.precioNuestro?`Precio sugerido por inmobiliaria: ${fmtMXN(p.precioNuestro)}`:'',
-    p.comisionPct?`Comisión: ${p.comisionPct}% (${fmtMXN(p.comisionMXN)})`:'',
-    `Contrato firmado: ${yes(p.contratoFirmado)}`,
-    `Permiso para publicar: ${yes(p.publicar!==false)}`,
-    p.vigencia?`Vigencia: ${p.vigencia}`:'',
-    p.notas?`Observaciones: ${p.notas}`:''
+    `Precio: ${fmtMXN(p.precioNuestro||p.precioSol)}`,
+    p.precioFinanciado?`Precio financiado: ${fmtMXN(p.precioFinanciado)}`:'',
+    p.enganche?`Enganche: ${fmtMXN(p.enganche)}`:'',
+    p.meses?`Plazo: ${p.meses} mensualidades de ${fmtMXN(p.mensualidad)}`:'',
+    p.pagosAnticipados?`Pagos anticipados: ${p.pagosAnticipados}`:'',
+    (p.creditos||[]).length?`Créditos aceptados: ${p.creditos.join(', ')}`:'',
+    p.rentaMensual?`Renta mensual: ${fmtMXN(p.rentaMensual)}`:'',
+    (p.permuta||[]).length?`Acepta bienes a cuenta: ${p.permuta.join(', ')}`:''
   ];
   return lines.filter((x,i)=>x!==''||lines[i-1]!=='').join('\n').trim();
+}
+function buildInternalSummary(p,type){
+  const pt=PROP_TYPES.find(x=>x.id===type);
+  const line=(label,value)=>value!==''&&value!==undefined&&value!==null?`${label}: ${value}`:'';
+  return [
+    'RESUMEN INTERNO DE CAPTACIÓN',
+    line('Tipo',pt?.name),line('Estado',p.estado||'Captación en proceso'),
+    line('Propietario',p.dueno),line('Teléfono',p.telefono),line('Teléfono alternativo',p.telefono2),
+    line('Asesor',p.asesor),line('Fecha',p.fecha),
+    line('Dirección exacta',[p.calle,p.numero,p.colonia,p.lugar,p.cp&&'CP '+p.cp].filter(Boolean).join(', ')),
+    line('Referencias',p.referencias),line('Google Maps',p.mapsLink),
+    line('Terreno',p.m2Sup&&p.m2Sup+' m²'),line('Construcción',p.m2Const&&p.m2Const+' m²'),
+    line('Documentación',(p.docs||[]).join(', ')),line('Régimen',(p.regimenPropiedad||[]).join(', ')),
+    line('Estado jurídico',(p.estadoJuridico||[]).join(', ')),line('Llaves y accesos',p.llaves),
+    line('Ocupación',p.ocupacion),line('Horarios de visita',p.horariosVisita),
+    line('Precio propietario',fmtMXN(p.precioSol)),line('Precio negociable',fmtMXN(p.precioNeg)),
+    line('Precio de nosotros',fmtMXN(p.precioNuestro)),line('Comisión',p.comisionPct&&p.comisionPct+'%'),
+    line('Daños detectados',p.danos),line('Reparaciones pendientes',p.reparaciones),
+    line('Remodelaciones pendientes',p.remodelacionesPendientes),line('Observaciones internas',p.observacionesInternas),
+    line('Notas',p.notas)
+  ].filter(Boolean).join('\n');
 }
 async function copyText(text){
   try{await navigator.clipboard.writeText(text);}
@@ -1355,6 +1582,33 @@ function calcComision(){
   const pct=parseFloat(document.getElementById('f-compct')?.value)||0;
   const el=document.getElementById('f-commxn');
   if(el&&p&&pct) el.value=(p*pct/100).toFixed(0);
+}
+function calcMensualidad(){
+  const price=Number(val('f-precio-fin'))||0;
+  const down=Number(val('f-enganche'))||0;
+  const selected=val('f-meses');
+  const months=Number(selected==='Personalizado'?val('f-meses-custom'):selected)||0;
+  const out=document.getElementById('f-mensualidad');
+  const warning=document.getElementById('finance-warning');
+  if(out)out.value=price&&months&&down<=price?((price-down)/months).toFixed(2):'';
+  if(warning)warning.textContent=down>price?'El enganche no puede ser mayor que el precio financiado.':'';
+}
+function toggleCustomMonths(){
+  document.getElementById('custom-months-wrap')?.classList.toggle('hidden',val('f-meses')!=='Personalizado');
+}
+function toggleVisitFields(){
+  const occupied=['Habitada','En renta'].includes(val('f-ocupacion'));
+  document.getElementById('visit-fields')?.classList.toggle('hidden',!occupied);
+}
+function selectStatus(status,button){
+  document.getElementById('f-estado').value=status;
+  button.parentElement.querySelectorAll('.status-pill').forEach(x=>x.classList.remove('on'));
+  button.classList.add('on');
+}
+function watchOtherChip(chipId,otherLabel,wrapId){
+  const wrap=document.getElementById(chipId);
+  const refresh=()=>document.getElementById(wrapId)?.classList.toggle('hidden',!getChips(chipId).includes(otherLabel));
+  wrap?.addEventListener('click',()=>setTimeout(refresh,0));refresh();
 }
 
 function handleFotos(input){
@@ -1447,10 +1701,18 @@ function afterRender(step){
       if(id==='terraza'&&F.terraza) initSw('terraza',true);
     });
   }
+  if(step==='Medidas'&&captType==='terre'){
+    initChips('f-acceso-terreno',LAND_ACCESS_L,true,F.accesosTerreno||[]);
+    initChips('f-ubicacion-fisica',LAND_LOCATION_L,true,F.ubicacionFisica||[]);
+    watchOtherChip('f-ubicacion-fisica','Otro','ubicacion-otro-wrap');
+  }
   if(step==='Servicios'){
     initChips('f-servicios',SERV_L,true,F.servicios||[]);
     initChips('f-equip',EQUIP_L,true,F.equipamiento||[]);
     initChips('f-docs',DOCS_L,true,F.docs||[]);
+    initChips('f-regimen',LEGAL_L,true,F.regimenPropiedad||[]);
+    initChips('f-estado-juridico',LEGAL_STATUS_L,true,F.estadoJuridico||[]);
+    toggleVisitFields();
     // show litros fields if selected
     document.getElementById('f-equip').querySelectorAll('.chip').forEach(c=>{
       if(c.textContent==='Tinaco'&&c.classList.contains('on')) document.getElementById('tinaco-field')?.classList.remove('hidden');
@@ -1467,25 +1729,39 @@ function afterRender(step){
       }
     });
   }
+  if(step==='Precios'){
+    const knownCredits=CREDIT_L.filter(x=>x!=='Otro');
+    const creditCustom=(F.creditos||[]).find(x=>!knownCredits.includes(x))||F.creditoOtro||'';
+    initChips('f-creditos',CREDIT_L,true,creditCustom?[...(F.creditos||[]).filter(x=>x!==creditCustom),'Otro']:(F.creditos||[]));
+    if(document.getElementById('f-credito-otro'))document.getElementById('f-credito-otro').value=creditCustom;
+    initChips('f-permuta',PERMUTA_L,true,(F.permutaOtro||((F.permuta||[]).some(x=>!PERMUTA_L.includes(x))))?[...(F.permuta||[]).filter(x=>PERMUTA_L.includes(x)),'Otro']:(F.permuta||[]));
+    watchOtherChip('f-creditos','Otro','credito-otro-wrap');
+    watchOtherChip('f-permuta','Otro','permuta-otro-wrap');
+    toggleCustomMonths();calcMensualidad();
+  }
 }
 
 // ── SAVE CAPTACIÓN ────────────────────────────────────────────
 function saveCaptacion(){
   saveCurrentStep();
   if(!F.dueno){showToast('Escribe el nombre del dueño',true);return;}
+  const previous=editingId?props_.find(x=>x.id===editingId):null;
   const rec={
     ...F,
-    id:uid(),tipo:captType,fotos:captThumbs,
-    createdAt:new Date().toISOString()
+    id:editingId||uid(),tipo:captType,fotos:captThumbs,
+    createdAt:previous?.createdAt||new Date().toISOString(),
+    updatedAt:new Date().toISOString()
   };
-  props_=[rec,...props_];
+  props_=editingId?[rec,...props_.filter(x=>x.id!==editingId)]:[rec,...props_];
   DB.set('inmo_p',props_);
   saveRecordCloud('propiedad',rec).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderProps();
+  initPropFilters();
   updateCounts();
-  showToast('✅ Captación guardada correctamente');
+  showToast(editingId?'✅ Captación actualizada':'✅ Captación guardada correctamente');
   // reset form state
   Object.keys(F).forEach(k=>delete F[k]);
+  editingId=null;
   showScreen('screen-main');
   switchTab('props');
 }
@@ -1505,11 +1781,14 @@ function openDetail(id){
     ['Asesor',p.asesor],['Fecha captación',p.fecha],
     ['Dueño',p.dueno],['Teléfono',p.telefono],['Tel. 2',p.telefono2],
     ['Subtipo',(p.subTipo||[]).join(', ')],['Operación',(p.operacion||[]).join(', ')],
+    ['Estado',p.estado||'Captación en proceso'],
     ['Ciudad',p.lugar],['Calle',p.calle],['Número',p.numero],
     ['Colonia',p.colonia],['CP',p.cp],['Referencias',p.referencias],
     ['Frente',p.frente?p.frente+' m':''],['Fondo',p.fondo?p.fondo+' m':''],
     ['Lado izq.',p.ladoIzq?p.ladoIzq+' m':''],['Lado der.',p.ladoDer?p.ladoDer+' m':''],
     ['M² Terreno',p.m2Sup?p.m2Sup+' m²':''],['M² Construcción',p.m2Const?p.m2Const+' m²':''],
+    ['Forma del terreno',p.formaTerreno],['Uso de suelo',p.usoSuelo],['Topografía',p.topografia],
+    ['Accesos terreno',(p.accesosTerreno||[]).join(', ')],['Ubicación física',(p.ubicacionFisica||[]).concat(p.ubicacionFisicaOtro||[]).join(', ')],
     ['Plantas',p.plantas],['Antigüedad',p.antiguedad?p.antiguedad+' años':''],
     ['Hab. principal',p.habPpal!==undefined?String(p.habPpal):''],
     ['Hab. secundarias',p.habSec!==undefined?String(p.habSec):''],
@@ -1531,31 +1810,60 @@ function openDetail(id){
     ['Tinaco litros',p.tinacoL?p.tinacoL+' L':''],
     ['Cisterna litros',p.cistL?p.cistL+' L':''],
     ['Documentación',(p.docs||[]).join(', ')],
+    ['Régimen de propiedad',(p.regimenPropiedad||[]).join(', ')],
+    ['Estado jurídico',(p.estadoJuridico||[]).join(', ')],
     ['Llaves',p.llaves],
+    ['Estado de ocupación',p.ocupacion],['Horarios de visita',p.horariosVisita],
+    ['Aviso previo',p.avisoPrevio],['Tiempo mínimo de aviso',p.tiempoAviso],
+    ['Visita fin de semana',p.finSemana],['Otra indicación de acceso',p.accesoOtro],
+    ['Estado de conservación',p.estadoConservacion],['Remodelaciones realizadas',p.remodelaciones],
+    ['Remodelaciones pendientes',p.remodelacionesPendientes],['Daños detectados',p.danos],
+    ['Reparaciones pendientes',p.reparaciones],['Observaciones internas',p.observacionesInternas],
+    ['Muebles incluidos',p.mueblesIncluidos],['Acepta mascotas',p.aceptaMascotas],['Restricciones',p.restricciones],
     ['Precio solicitado',fmtMXN(p.precioSol)],
     ['Precio negociable',fmtMXN(p.precioNeg)],
     ['Precio nuestro',fmtMXN(p.precioNuestro)],
     ['Comisión',p.comisionPct?p.comisionPct+'%':''],
     ['Comisión MXN',fmtMXN(p.comisionMXN)],
+    ['Precio financiado',fmtMXN(p.precioFinanciado)],['Enganche',fmtMXN(p.enganche)],
+    ['Mensualidades',p.meses],['Mensualidad',fmtMXN(p.mensualidad)],['Pagos anticipados',p.pagosAnticipados],
+    ['Créditos aceptados',(p.creditos||[]).join(', ')],
+    ['Renta mensual',fmtMXN(p.rentaMensual)],['Observaciones de renta',p.rentaObservaciones],
+    ['Bienes a cuenta',(p.permuta||[]).join(', ')],
     ['Vigencia',p.vigencia],['Firma contrato',p.firmaContrato],
     ['Contrato firmado',p.contratoFirmado?'✅ Sí':'⏳ Pendiente'],
     ['Permiso publicar',p.publicar?'Sí':'No — privado'],
-    ['Notas',p.notas],['Análisis / Potencial',p.potencial],
+    ['Notas',p.notas],
   ].filter(([,v])=>v!==''&&v!==undefined&&v!==null);
 
   let html='';
 
+  html+=`<div class="card">
+    <div class="card-head">📍 Seguimiento</div>
+    <div class="status-bar">${STATUS_L.map(x=>`<button type="button" class="status-pill${(p.estado||'Captación en proceso')===x?' on':''}" onclick="updateDetailStatus('${x.replace(/'/g,"\\'")}')">${x}</button>`).join('')}</div>
+  </div>`;
   if(p.mapsLink){
     html+=`<div style="margin-bottom:14px;"><a href="${esc(p.mapsLink)}" target="_blank">🗺 Ver en Google Maps →</a></div>`;
+  }
+  if(p.telefono){
+    let phone=String(p.telefono).replace(/\D/g,'');
+    if(phone.length===10)phone='52'+phone;
+    html+=`<a class="btn btn-whatsapp btn-full" style="display:block;text-align:center;margin-bottom:14px;text-decoration:none;" href="https://wa.me/${phone}" target="_blank">WhatsApp al propietario</a>`;
   }
   if(p.fotos?.length){
     html+=`<div class="card"><div class="card-head">📸 Fotos</div><div class="thumb-grid">${p.fotos.map(s=>`<img src="${s}" class="thumb" alt="">`).join('')}</div></div>`;
   }
   html+=`<div class="card">
+    <div class="card-head">🔒 Resumen interno</div>
+    <div class="private-note">Contiene información privada. No usar en publicaciones.</div>
+    <textarea id="internal-summary" readonly rows="14">${esc(buildInternalSummary(p,p.tipo))}</textarea>
+    <button class="btn btn-ghost btn-full mt" onclick="copyInternalSummary()">Copiar resumen interno</button>
+  </div>`;
+  html+=`<div class="card">
     <div class="card-head">📤 Resumen para compartir</div>
     <textarea id="detail-summary" readonly rows="14">${esc(buildShareSummary(p,p.tipo))}</textarea>
     <div class="g2 mt">
-      <button class="btn btn-primary" onclick="copyDetailSummary()">Copiar resumen</button>
+      <button class="btn btn-primary" onclick="copyDetailSummary()">Copiar versión pública</button>
       <button class="btn btn-ghost" onclick="shareDetailSummary()">Compartir</button>
     </div>
   </div>`;
@@ -1569,9 +1877,31 @@ function openDetail(id){
   showScreen('screen-detail');
 }
 
+function updateDetailStatus(status){
+  const p=props_.find(x=>x.id===curDetail);
+  if(!p)return;
+  p.estado=status;p.updatedAt=new Date().toISOString();
+  DB.set('inmo_p',props_);
+  saveRecordCloud('propiedad',p).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
+  renderProps();updateCounts();openDetail(p.id);showToast(`Estado: ${status}`);
+}
+
+function editCurrentProp(){
+  const p=props_.find(x=>x.id===curDetail);
+  if(!p)return;
+  Object.keys(F).forEach(k=>delete F[k]);
+  Object.assign(F,JSON.parse(JSON.stringify(p)));
+  editingId=p.id;selectedType=p.tipo;
+  initCaptForm(p.tipo);captThumbs=[...(p.fotos||[])];showScreen('screen-capt');
+}
+
 async function copyDetailSummary(){
   await copyText(document.getElementById('detail-summary')?.value||'');
   showToast('Resumen copiado');
+}
+async function copyInternalSummary(){
+  await copyText(document.getElementById('internal-summary')?.value||'');
+  showToast('Resumen interno copiado');
 }
 async function shareDetailSummary(){
   const text=document.getElementById('detail-summary')?.value||'';
@@ -1581,12 +1911,14 @@ async function shareDetailSummary(){
 
 function deleteProp(){
   if(!curDetail)return;
-  if(!confirm('¿Eliminar esta propiedad?'))return;
-  props_=props_.filter(p=>p.id!==curDetail);
+  if(!confirm('¿Retirar esta propiedad del inventario activo? Seguirá disponible en el historial.'))return;
+  const target=props_.find(p=>p.id===curDetail);
+  if(!target)return;
+  target.estado='Retirada';target.updatedAt=new Date().toISOString();
   DB.set('inmo_p',props_);
-  deleteRecordCloud(curDetail).catch(()=>setSyncBadge(false,'PENDIENTE'));
+  saveRecordCloud('propiedad',target).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderProps();updateCounts();
-  showToast('🗑 Propiedad eliminada');
+  showToast('Propiedad retirada del inventario activo');
   showScreen('screen-main');
 }
 
@@ -1596,7 +1928,17 @@ function deleteProp(){
 function renderProps(){
   const q=(document.getElementById('search-props')?.value||'').toLowerCase();
   const list=document.getElementById('list-props');
-  const filtered=props_.filter(p=>[p.dueno,p.colonia,p.lugar,PROP_TYPES.find(x=>x.id===p.tipo)?.name].join(' ').toLowerCase().includes(q));
+  const advisor=val('filter-asesor'),status=val('filter-estado'),type=val('filter-tipo');
+  const zone=val('filter-zona').toLowerCase(),min=Number(val('filter-precio-min'))||0,max=Number(val('filter-precio-max'))||Infinity;
+  const filtered=props_.filter(p=>{
+    const price=Number(p.precioNuestro||p.precioSol)||0;
+    const currentStatus=p.estado||'Captación en proceso';
+    if(currentStatus==='Retirada'&&!showRetired&&status!=='Retirada')return false;
+    return [p.dueno,p.colonia,p.lugar,PROP_TYPES.find(x=>x.id===p.tipo)?.name].join(' ').toLowerCase().includes(q)
+      &&(!advisor||p.asesor===advisor)&&(!status||currentStatus===status)&&(!type||p.tipo===type)
+      &&(!zone||[p.colonia,p.lugar].join(' ').toLowerCase().includes(zone))
+      &&price>=min&&price<=max;
+  });
   if(!filtered.length){
     list.innerHTML=`<div class="empty"><div class="e-icon">🏠</div><div class="e-title">Sin propiedades captadas</div><div class="e-sub">Toca "+ Nueva captación" para comenzar</div></div>`;
     return;
@@ -1612,15 +1954,36 @@ function renderProps(){
       (p.operacion||[]).includes('Venta')?'<span class="bdg bdg-gold">Venta</span>':'',
       p.contratoFirmado?'<span class="bdg bdg-green">Contrato ✓</span>':'',
       p.publicar===false?'<span class="bdg bdg-red">Privado</span>':'',
+      `<span class="bdg bdg-blue">${esc(p.estado||'Captación en proceso')}</span>`,
     ].filter(Boolean).join('');
     const price=p.precioSol?`<div class="prop-price"><div class="amount">${fmtMXN(p.precioSol)}</div><div class="label">precio solicitado</div></div>`:'';
-    return `<div class="prop-card" onclick="openDetail('${p.id}')">
+    return `<div class="prop-card${(p.estado||'')==='Pausada'?' paused':''}" onclick="openDetail('${p.id}')">
       <div style="flex:1;min-width:0;">
         <div class="prop-name">${esc(p.dueno||'Sin nombre')}</div>
         <div class="prop-meta">${bdgs}</div>
       </div>${price}
     </div>`;
   }).join('');
+}
+
+function initPropFilters(){
+  const advisor=document.getElementById('filter-asesor');
+  const status=document.getElementById('filter-estado');
+  const type=document.getElementById('filter-tipo');
+  const advisorValue=advisor?.value||'',statusValue=status?.value||'',typeValue=type?.value||'';
+  if(advisor)advisor.innerHTML='<option value="">Todos los asesores</option>'+[...new Set([...ASESORES,...props_.map(p=>p.asesor).filter(Boolean)])].map(x=>`<option>${esc(x)}</option>`).join('');
+  if(status)status.innerHTML='<option value="">Todos los estados</option>'+STATUS_L.map(x=>`<option>${x}</option>`).join('');
+  if(type)type.innerHTML='<option value="">Todos los tipos</option>'+PROP_TYPES.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
+  if(advisor)advisor.value=advisorValue;if(status)status.value=statusValue;if(type)type.value=typeValue;
+}
+function clearPropFilters(){
+  ['search-props','filter-asesor','filter-estado','filter-tipo','filter-zona','filter-precio-min','filter-precio-max'].forEach(id=>{const node=document.getElementById(id);if(node)node.value='';});
+  showRetired=false;document.getElementById('btn-retired').textContent='Ver retiradas';renderProps();
+}
+function toggleRetired(){
+  showRetired=!showRetired;
+  document.getElementById('btn-retired').textContent=showRetired?'Ocultar retiradas':'Ver retiradas';
+  renderProps();
 }
 
 function renderDemanda(){
@@ -1677,6 +2040,9 @@ function renderCRM(){
     {icon:'✅',label:'Contratos firmados',val:props_.filter(p=>p.contratoFirmado).length,color:'var(--grn)'},
     {icon:'📢',label:'Propiedades para publicar',val:props_.filter(p=>p.publicar!==false).length,color:'var(--amb)'},
     {icon:'🔒',label:'Propiedades privadas',val:props_.filter(p=>p.publicar===false).length,color:'var(--dim)'},
+    {icon:'⏸',label:'Propiedades pausadas',val:props_.filter(p=>p.estado==='Pausada').length,color:'var(--dim)'},
+    {icon:'✅',label:'Propiedades vendidas',val:props_.filter(p=>p.estado==='Vendida').length,color:'var(--grn)'},
+    {icon:'📁',label:'Propiedades retiradas',val:props_.filter(p=>p.estado==='Retirada').length,color:'var(--red)'},
   ].map(s=>`
     <div class="stat-card">
       <span class="stat-label">${s.icon} ${s.label}</span>
@@ -1685,7 +2051,7 @@ function renderCRM(){
 }
 
 function updateCounts(){
-  document.getElementById('count-props').textContent=props_.length;
+  document.getElementById('count-props').textContent=props_.filter(p=>(p.estado||'')!=='Retirada').length;
   document.getElementById('count-demanda').textContent=demandas.length;
   document.getElementById('count-visitas').textContent=visitas.length;
 }
@@ -1790,6 +2156,7 @@ window.showScreen=function(id){
 renderProps();
 renderDemanda();
 renderVisitas();
+initPropFilters();
 updateCounts();
 syncFromCloud();
 setInterval(syncFromCloud,15000);
