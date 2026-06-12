@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Inmobiliaria">
+<title>Gestión Inmobiliaria</title>
+<style>
+:root {
+  --bg:#0b0b0e; --s1:#111118; --s2:#18181f; --s3:#1f1f28;
+  --ln:#28283a; --ln2:#35354a; --dim:#50506a; --sub:#8080a0;
+  --txt:#d8d8ee; --wht:#ffffff;
+  --blu:#5c6ff5; --bla:rgba(92,111,245,0.14); --blg:rgba(92,111,245,0.24);
+  --gld:#c9a94c; --gla:rgba(201,169,76,0.13);
+  --grn:#30ca7e; --red:#e05555; --amb:#f0a030;
+  --r:9px; --r2:13px; --r3:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{display:none;}
+* {scrollbar-width:none;}
+a{color:var(--blu);}
+
+/* ── HIDDEN ── */
+.hidden{display:none!important;}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;min-height:100vh;}
+.screen.active{display:flex;}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;z-index:200;
+  background:var(--s1);border-bottom:1px solid var(--ln);
+  height:56px;display:flex;align-items:center;padding:0 16px;gap:10px;
+  flex-shrink:0;
+}
+.topbar-title{font-weight:800;font-size:17px;color:var(--wht);flex:1;}
+.topbar-title em{color:var(--gld);font-style:normal;}
+.topbar-badge{background:var(--s3);border:1px solid var(--ln);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--sub);}
+
+/* ── NAV TABS ── */
+.nav-tabs{
+  background:var(--s1);border-bottom:1px solid var(--ln);
+  display:flex;overflow-x:auto;padding:0 8px;flex-shrink:0;
+}
+.tab-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:13px 14px;font-size:13px;font-weight:500;
+  color:var(--dim);border-bottom:2px solid transparent;
+  background:none;border:none;border-bottom:2px solid transparent;
+  white-space:nowrap;outline:none;flex-shrink:0;
+  transition:color .15s;
+}
+.tab-btn.active{color:var(--blu);border-bottom-color:var(--blu);}
+.tab-count{
+  background:var(--s3);border-radius:10px;
+  padding:1px 7px;font-size:11px;color:var(--sub);
+}
+.tab-btn.active .tab-count{background:var(--bla);color:var(--blu);}
+
+/* ── STEP BAR ── */
+.step-bar{
+  background:var(--s1);border-bottom:1px solid var(--ln);
+  display:flex;overflow-x:auto;padding:0 8px;flex-shrink:0;
+}
+.step-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:10px 11px;font-size:12px;font-weight:500;color:var(--dim);
+  border-bottom:2px solid transparent;background:none;border:none;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;outline:none;flex-shrink:0;cursor:pointer;
+}
+.step-btn.active{color:var(--blu);border-bottom-color:var(--blu);}
+.step-btn.done{color:var(--grn);}
+.step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* ── PAGE ── */
+.page{flex:1;padding:20px 16px 100px;max-width:720px;margin:0 auto;width:100%;overflow-y:auto;}
+
+/* ── NAV BOTTOM ── */
+.nav-bottom{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--s1);border-top:1px solid var(--ln);
+  padding:12px 16px;display:flex;gap:10px;z-index:100;
+}
+
+/* ── CARD ── */
+.card{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r3);padding:18px 16px;margin-bottom:12px;}
+.card-head{
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;
+  color:var(--dim);margin-bottom:14px;
+}
+.card-head::after{content:'';flex:1;height:1px;background:var(--ln);}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:9px;}
+.mt{margin-top:12px;}
+.mt8{margin-top:8px;}
+@media(max-width:480px){.g4{grid-template-columns:1fr 1fr;}}
+
+/* ── FIELD ── */
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:12px;font-weight:500;color:var(--sub);}
+.req{color:var(--blu);}
+
+/* ── INPUTS ── */
+input[type=text],input[type=number],input[type=tel],
+input[type=date],input[type=time],input[type=email],
+textarea,select{
+  background:var(--s2);border:1px solid var(--ln);border-radius:var(--r);
+  color:var(--txt);font-size:14px;padding:9px 12px;width:100%;
+  outline:none;-webkit-appearance:none;appearance:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:var(--blu);box-shadow:0 0 0 3px var(--blg);
+}
+input::placeholder,textarea::placeholder{color:var(--dim);}
+textarea{resize:vertical;min-height:80px;}
+select{
+  cursor:pointer;padding-right:28px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%238080a0' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+}
+select option{background:var(--s2);}
+input[readonly]{opacity:.55;}
+
+/* ── PRICE INPUT ── */
+.price-wrap{position:relative;}
+.price-wrap input{padding-left:22px;}
+.price-prefix{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:var(--dim);font-weight:600;pointer-events:none;
+}
+
+/* ── CHIPS ── */
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{
+  background:var(--s2);border:1px solid var(--ln);border-radius:8px;
+  color:var(--sub);font-size:13px;font-weight:500;padding:6px 12px;
+  cursor:pointer;user-select:none;transition:all .12s;
+}
+.chip.on{background:var(--bla);border-color:var(--blu);color:#9aa8ff;}
+
+/* ── TOGGLE SWITCH ── */
+.sw-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid var(--ln);
+}
+.sw-label{font-size:14px;color:var(--txt);}
+.sw{
+  width:40px;height:22px;background:var(--s3);border:1px solid var(--ln);
+  border-radius:11px;cursor:pointer;position:relative;transition:background .2s;
+  flex-shrink:0;
+}
+.sw.on{background:var(--blu);border-color:var(--blu);}
+.sw-knob{
+  width:16px;height:16px;background:#fff;border-radius:50%;
+  position:absolute;top:2px;left:2px;
+  transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.4);
+}
+.sw.on .sw-knob{transform:translateX(18px);}
+.sw-extra{padding:10px 0 4px;display:none;}
+.sw-extra.show{display:block;}
+
+/* ── COUNTER ── */
+.ctr-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 0;border-bottom:1px solid var(--ln);
+}
+.ctr-label{font-size:14px;color:var(--txt);}
+.ctr-ctrl{display:flex;align-items:center;gap:10px;}
+.ctr-btn{
+  width:30px;height:30px;background:var(--s2);border:1px solid var(--ln);
+  border-radius:7px;color:var(--txt);font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;line-height:1;transition:border-color .12s;
+  flex-shrink:0;
+}
+.ctr-btn:active{border-color:var(--blu);}
+.ctr-val{font-size:16px;font-weight:600;min-width:24px;text-align:center;color:var(--wht);}
+
+/* ── DIM CALC BOX ── */
+.dim-box{
+  background:var(--bla);border:1px solid rgba(92,111,245,.28);
+  border-radius:var(--r);padding:11px 14px;
+  display:flex;justify-content:space-between;align-items:center;margin-top:12px;
+}
+.dim-box span:first-child{font-size:13px;color:var(--sub);}
+.dim-box span:last-child{font-size:17px;font-weight:700;color:#9aa8ff;}
+
+/* ── BUTTONS ── */
+.btn{
+  border-radius:var(--r);font-weight:600;font-size:14px;
+  padding:11px 18px;border:none;outline:none;cursor:pointer;
+  transition:opacity .15s;font-family:inherit;
+}
+.btn:active{opacity:.8;}
+.btn-primary{background:var(--blu);color:#fff;}
+.btn-ghost{background:var(--s2);border:1px solid var(--ln);color:var(--sub);}
+.btn-gold{background:var(--gld);color:#0b0b0e;}
+.btn-sm{padding:7px 13px;font-size:13px;background:var(--s2);border:1px solid var(--ln);color:var(--sub);border-radius:8px;}
+.btn-full{width:100%;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── BADGE ── */
+.bdg{
+  display:inline-flex;align-items:center;
+  border-radius:6px;padding:2px 8px;
+  font-size:11px;font-weight:600;
+}
+.bdg-blue{background:var(--bla);color:#9aa8ff;}
+.bdg-gold{background:var(--gla);color:var(--gld);}
+.bdg-green{background:rgba(48,202,126,.12);color:var(--grn);}
+.bdg-red{background:rgba(224,85,85,.12);color:var(--red);}
+
+/* ── EYE TITLE ── */
+.eye{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--blu);margin-bottom:6px;}
+.big-title{font-weight:800;font-size:22px;color:var(--wht);margin-bottom:20px;}
+
+/* ── PROP CARD ── */
+.prop-card{
+  background:var(--s1);border:1px solid var(--ln);border-radius:var(--r2);
+  padding:15px 16px;margin-bottom:10px;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  transition:border-color .15s;
+}
+.prop-card:active{border-color:var(--ln2);}
+.prop-name{font-size:15px;font-weight:600;color:var(--wht);margin-bottom:5px;}
+.prop-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--sub);align-items:center;}
+.prop-price{text-align:right;flex-shrink:0;}
+.prop-price .amount{font-weight:800;font-size:16px;color:var(--gld);}
+.prop-price .label{font-size:10px;color:var(--dim);}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap input{padding-left:34px;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);pointer-events:none;}
+
+/* ── FILE DROP ── */
+.file-drop{
+  border:1.5px dashed var(--ln2);border-radius:var(--r);
+  padding:20px;text-align:center;cursor:pointer;background:var(--s2);
+}
+.file-drop .icon{font-size:28px;margin-bottom:6px;}
+.file-drop p{font-size:13px;color:var(--sub);}
+.file-drop small{font-size:11px;color:var(--dim);}
+.thumb-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.thumb{width:68px;height:68px;border-radius:8px;object-fit:cover;border:1px solid var(--ln);}
+
+/* ── STAT CARD ── */
+.stat-card{
+  background:var(--s1);border:1px solid var(--ln);border-radius:var(--r2);
+  padding:16px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
+}
+.stat-label{font-size:14px;color:var(--sub);}
+.stat-val{font-weight:800;font-size:28px;}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;top:68px;right:16px;
+  background:var(--grn);color:#fff;
+  padding:9px 17px;border-radius:var(--r);
+  font-size:13px;font-weight:600;z-index:999;
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+
+/* ── TYPE SELECTOR ── */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.type-card{
+  background:var(--s1);border:1px solid var(--ln);border-radius:var(--r3);
+  padding:18px 12px;cursor:pointer;text-align:center;transition:all .15s;
+}
+.type-card.sel{background:var(--bla);border-color:var(--blu);}
+.type-card .t-icon{font-size:34px;margin-bottom:8px;}
+.type-card .t-name{font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px;}
+.type-card.sel .t-name{color:#9aa8ff;}
+.type-card .t-sub{font-size:11px;color:var(--sub);line-height:1.4;}
+
+/* ── DETAIL ROWS ── */
+.detail-row{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:8px 0;border-bottom:1px solid var(--ln);gap:12px;
+}
+.detail-key{font-size:13px;color:var(--sub);flex-shrink:0;}
+.detail-val{font-size:13px;color:var(--txt);font-weight:500;text-align:right;}
+
+/* ── AI BOX ── */
+.ai-box{
+  background:linear-gradient(135deg,rgba(92,111,245,.08),rgba(201,169,76,.05));
+  border:1px solid rgba(92,111,245,.22);border-radius:12px;padding:16px;
+}
+.ai-title{font-size:13px;color:#9aa8ff;font-weight:600;margin-bottom:10px;}
+.ai-text{font-size:14px;color:var(--txt);line-height:1.7;white-space:pre-wrap;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:52px 20px;color:var(--dim);}
+.empty .e-icon{font-size:40px;margin-bottom:12px;}
+.empty .e-title{font-size:15px;color:var(--sub);font-weight:600;margin-bottom:6px;}
+.empty .e-sub{font-size:13px;}
+
+/* ── GPS ROW ── */
+.gps-row{display:flex;gap:8px;}
+.gps-row input{flex:1;}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     TOAST
+════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: MAIN LIST
+════════════════════════════════════════ -->
+<div id="screen-main" class="screen active">
+  <div class="topbar">
+    <div class="topbar-title">🏢 <em>Gestión</em> Inmobiliaria</div>
+    <span style="background:var(--s3);border:1px solid var(--ln);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--grn);">● EN LÍNEA</span>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" data-tab="props" onclick="switchTab('props')">🏠 Propiedades <span class="tab-count" id="count-props">0</span></button>
+    <button class="tab-btn" data-tab="demanda" onclick="switchTab('demanda')">🔍 Demanda <span class="tab-count" id="count-demanda">0</span></button>
+    <button class="tab-btn" data-tab="visitas" onclick="switchTab('visitas')">📅 Visitas <span class="tab-count" id="count-visitas">0</span></button>
+    <button class="tab-btn" data-tab="crm" onclick="switchTab('crm')">📊 CRM</button>
+  </div>
+
+  <!-- TAB: PROPIEDADES -->
+  <div id="tab-props" class="page">
+    <div class="eye">Inventario activo</div>
+    <div class="big-title">Propiedades captadas</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-props" placeholder="Buscar dueño, colonia, tipo..." oninput="renderProps()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="goTypeSelect()" style="margin-bottom:14px;">+ Nueva captación</button>
+    <div id="list-props"></div>
+  </div>
+
+  <!-- TAB: DEMANDA -->
+  <div id="tab-demanda" class="page hidden">
+    <div class="eye">Clientes buscando</div>
+    <div class="big-title">Demanda activa</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-demanda" placeholder="Buscar nombre o zona..." oninput="renderDemanda()">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="showScreen('screen-demanda-form')" style="margin-bottom:14px;">+ Registrar búsqueda de cliente</button>
+    <div id="list-demanda"></div>
+  </div>
+
+  <!-- TAB: VISITAS -->
+  <div id="tab-visitas" class="page hidden">
+    <div class="eye">Agenda</div>
+    <div class="big-title">Visitas programadas</div>
+    <button class="btn btn-primary btn-full" onclick="showScreen('screen-visita-form')" style="margin-bottom:14px;">+ Agendar visita</button>
+    <div id="list-visitas"></div>
+  </div>
+
+  <!-- TAB: CRM -->
+  <div id="tab-crm" class="page hidden">
+    <div class="eye">Panel general</div>
+    <div class="big-title">CRM</div>
+    <div id="crm-stats"></div>
+    <div class="card" style="text-align:center;color:var(--dim);font-size:13px;padding:22px 16px;margin-top:4px;">
+      📊 Historial por cliente y seguimiento — próximamente
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: TYPE SELECTOR
+════════════════════════════════════════ -->
+<div id="screen-type" class="screen">
+  <div class="topbar">
+    <button class="btn btn-sm" onclick="showScreen('screen-main')">← Cancelar</button>
+    <div class="topbar-title"><em>Nueva</em> captación</div>
+  </div>
+  <div class="page">
+    <div class="eye">Paso 1</div>
+    <div class="big-title">¿Qué tipo de propiedad?</div>
+    <div class="type-grid" id="type-grid"></div>
+  </div>
+  <div class="nav-bottom">
+    <button class="btn btn-ghost" onclick="showScreen('screen-main')">Cancelar</button>
+    <button class="btn btn-primary btn-full" id="btn-type-continue" onclick="startCaptacion()" disabled>Continuar →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: CAPTACIÓN FORM
+════════════════════════════════════════ -->
+<div id="screen-capt" class="screen">
+  <div class="topbar">
+    <button class="btn btn-sm" onclick="showScreen('screen-type')">← Volver</button>
+    <div class="topbar-title" id="capt-title">Captación</div>
+    <span class="topbar-badge" id="capt-step-label">General</span>
+  </div>
+  <div class="step-bar" id="capt-step-bar"></div>
+  <div class="page" id="capt-page"></div>
+  <div class="nav-bottom">
+    <button class="btn btn-ghost hidden" id="btn-capt-prev" onclick="captPrev()">← Atrás</button>
+    <button class="btn btn-primary btn-full" id="btn-capt-next" onclick="captNext()">Siguiente →</button>
+    <button class="btn btn-gold btn-full hidden" id="btn-capt-save" onclick="saveCaptacion()">💾 Guardar captación</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: DETALLE PROPIEDAD
+════════════════════════════════════════ -->
+<div id="screen-detail" class="screen">
+  <div class="topbar">
+    <button class="btn btn-sm" onclick="showScreen('screen-main')">← Volver</button>
+    <div class="topbar-title" id="detail-title">Propiedad</div>
+    <button class="btn btn-sm" style="color:var(--red);border-color:var(--red);" onclick="deleteProp()">🗑</button>
+  </div>
+  <div class="page" id="detail-page"></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: DEMANDA FORM
+════════════════════════════════════════ -->
+<div id="screen-demanda-form" class="screen">
+  <div class="topbar">
+    <button class="btn btn-sm" onclick="showScreen('screen-main')">← Cancelar</button>
+    <div class="topbar-title">🔍 <em>Demanda</em></div>
+  </div>
+  <div class="page">
+    <div class="eye">Nuevo cliente buscador</div>
+    <div class="big-title">¿Qué está buscando?</div>
+
+    <div class="card">
+      <div class="card-head">👤 Datos del cliente</div>
+      <div class="field"><label>Nombre completo <span class="req">*</span></label><input type="text" id="dem-nombre" placeholder="Nombre del cliente"></div>
+      <div class="g2 mt">
+        <div class="field"><label>Teléfono</label><input type="tel" id="dem-tel" placeholder="55 0000 0000"></div>
+        <div class="field"><label>Email</label><input type="email" id="dem-email" placeholder="correo@..."></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">🔍 Qué busca</div>
+      <label style="font-size:12px;font-weight:500;color:var(--sub);display:block;margin-bottom:8px;">Operación</label>
+      <div class="chips" id="dem-operacion"></div>
+      <label style="font-size:12px;font-weight:500;color:var(--sub);display:block;margin:14px 0 8px;">Tipo de propiedad</label>
+      <div class="chips" id="dem-tipo"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">💰 Presupuesto</div>
+      <div class="g2">
+        <div class="field"><label>Mínimo</label><div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="dem-min" placeholder="0"></div></div>
+        <div class="field"><label>Máximo</label><div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="dem-max" placeholder="0"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">📍 Zonas y medidas</div>
+      <div class="field"><label>Zonas preferidas</label><input type="text" id="dem-zonas" placeholder="Ej. Centro, Juriquilla..."></div>
+      <div class="g2 mt">
+        <div class="field"><label>M² terreno mín.</label><input type="number" id="dem-m2ter" placeholder="m²"></div>
+        <div class="field"><label>M² construcción mín.</label><input type="number" id="dem-m2con" placeholder="m²"></div>
+      </div>
+      <div class="ctr-row mt" style="border-bottom:none;">
+        <span class="ctr-label">Habitaciones mínimas</span>
+        <div class="ctr-ctrl">
+          <button class="ctr-btn" onclick="ctr('dem-hab',-1)">−</button>
+          <span class="ctr-val" id="dem-hab">0</span>
+          <button class="ctr-btn" onclick="ctr('dem-hab',1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">✅ Requisitos</div>
+      <div class="chips" id="dem-req"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">⏱ Urgencia</div>
+      <div class="chips" id="dem-urgencia"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">📝 Notas</div>
+      <textarea id="dem-notas" placeholder="Situación del cliente, financiamiento, detalles..."></textarea>
+    </div>
+  </div>
+  <div class="nav-bottom">
+    <button class="btn btn-ghost" onclick="showScreen('screen-main')">Cancelar</button>
+    <button class="btn btn-primary btn-full" onclick="saveDemanda()">💾 Guardar demanda</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN: VISITA FORM
+════════════════════════════════════════ -->
+<div id="screen-visita-form" class="screen">
+  <div class="topbar">
+    <button class="btn btn-sm" onclick="showScreen('screen-main')">← Cancelar</button>
+    <div class="topbar-title">📅 <em>Visita</em></div>
+  </div>
+  <div class="page">
+    <div class="eye">Agendar</div>
+    <div class="big-title">Solicitud de visita</div>
+    <div class="card">
+      <div class="card-head">👤 Interesado</div>
+      <div class="field"><label>Nombre</label><input type="text" id="vis-nombre" placeholder="Nombre del cliente"></div>
+      <div class="field mt"><label>Teléfono</label><input type="tel" id="vis-tel" placeholder="55 0000 0000"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">🏠 Propiedad a visitar</div>
+      <div class="field"><label>Seleccionar propiedad</label><select id="vis-prop"><option value="">Seleccionar...</option></select></div>
+    </div>
+    <div class="card">
+      <div class="card-head">📅 Fecha y hora</div>
+      <div class="g2">
+        <div class="field"><label>Fecha</label><input type="date" id="vis-fecha"></div>
+        <div class="field"><label>Hora</label><input type="time" id="vis-hora"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">📝 Notas</div>
+      <textarea id="vis-notas" placeholder="Indicaciones especiales, confirmaciones..."></textarea>
+    </div>
+  </div>
+  <div class="nav-bottom">
+    <button class="btn btn-ghost" onclick="showScreen('screen-main')">Cancelar</button>
+    <button class="btn btn-primary btn-full" onclick="saveVisita()">📅 Agendar visita</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── STORAGE ──────────────────────────────────────────────────
+const DB = {
+  get:(k)=>{ try{return JSON.parse(localStorage.getItem(k)||'[]')}catch{return[]} },
+  set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v))}catch{} }
+};
+
+// ── STATE ─────────────────────────────────────────────────────
+let props_   = DB.get('inmo_p');
+let demandas = DB.get('inmo_d');
+let visitas  = DB.get('inmo_v');
+let curDetail = null;
+
+// ── HELPERS ───────────────────────────────────────────────────
+const uid   = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const today = ()=>new Date().toISOString().slice(0,10);
+const fmtMXN= v=>v?'$'+Number(v).toLocaleString('es-MX'):'—';
+const esc   = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function showToast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=err?'var(--red)':'var(--grn)';
+  t.style.opacity=1;
+  setTimeout(()=>t.style.opacity=0,2500);
+}
+
+// ── SCREENS ───────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('#screen-main .page').forEach(p=>p.classList.add('hidden'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  if(tab==='crm') renderCRM();
+}
+
+// ── COUNTER ───────────────────────────────────────────────────
+const ctrVals={};
+function ctr(id,delta){
+  if(ctrVals[id]===undefined) ctrVals[id]=0;
+  ctrVals[id]=Math.max(0,ctrVals[id]+delta);
+  document.getElementById(id).textContent=ctrVals[id];
+}
+function getCtr(id){return ctrVals[id]||0;}
+function setCtr(id,v){ctrVals[id]=v;const el=document.getElementById(id);if(el)el.textContent=v;}
+
+// ── CHIPS ─────────────────────────────────────────────────────
+const chipState={};
+function initChips(containerId,options,multi=true,initialVals=[]){
+  chipState[containerId]=new Set(initialVals);
+  const wrap=document.getElementById(containerId);
+  if(!wrap)return;
+  wrap.innerHTML='';
+  options.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='chip'+(initialVals.includes(opt)?' on':'');
+    btn.textContent=opt;
+    btn.onclick=()=>{
+      if(multi){
+        if(chipState[containerId].has(opt)){chipState[containerId].delete(opt);btn.classList.remove('on');}
+        else{chipState[containerId].add(opt);btn.classList.add('on');}
+      } else {
+        wrap.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+        chipState[containerId].clear();
+        chipState[containerId].add(opt);btn.classList.add('on');
+      }
+    };
+    wrap.appendChild(btn);
+  });
+}
+function getChips(id){return chipState[id]?[...chipState[id]]:[];}
+
+// ── TOGGLE SWITCH ─────────────────────────────────────────────
+const swState={};
+function initSw(id,val=false){swState[id]=val;const el=document.getElementById('sw-'+id);if(el&&val)el.classList.add('on');}
+function toggleSw(id){
+  swState[id]=!swState[id];
+  const el=document.getElementById('sw-'+id);
+  el.classList.toggle('on',swState[id]);
+  const extra=document.getElementById('swx-'+id);
+  if(extra)extra.classList.toggle('show',swState[id]);
+}
+function getSw(id){return!!swState[id];}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+const PROP_TYPES=[
+  {id:'casa',  icon:'🏠',name:'Casa',           sub:'Habitación, esquina, privada, remodelar'},
+  {id:'depto', icon:'🏢',name:'Departamento',   sub:'Planta baja, alta, penthouse, loft'},
+  {id:'terre', icon:'🌿',name:'Terreno',         sub:'Habitacional, comercial, irregular'},
+  {id:'local', icon:'🏪',name:'Local comercial',sub:'En plaza, calle, esquinero'},
+  {id:'bodega',icon:'🏭',name:'Bodega / Nave',  sub:'Con oficinas, nave sola, maniobras'},
+  {id:'rancho',icon:'🐄',name:'Rancho / Huerta',sub:'Agropecuario, recreativo'},
+  {id:'ofic',  icon:'💼',name:'Oficina',         sub:'Piso completo, cubículo, coworking'},
+  {id:'otro',  icon:'📦',name:'Otro',            sub:'Especificar en notas'},
+];
+const SUBTYPES={
+  casa:  ['Residencial media','Interés social','Lujo','Para remodelar','En esquina','En privada','Con negocio','Con depto adicional'],
+  depto: ['Planta baja','Planta alta','Con elevador','Penthouse','Loft','Estudio'],
+  terre: ['Habitacional','Comercial','Mixto','Plano','Con desnivel','Irregular'],
+  local: ['En plaza','Calle principal','Esquinero','Con mezzanine','Con bodega'],
+  bodega:['Con oficinas','Solo nave','Refrigerada','Patio de maniobras'],
+  rancho:['Agropecuario','Recreativo','Con casa principal','Con pozo','Con corrales'],
+  ofic:  ['Piso completo','Cubículo','Coworking','Con sala juntas'],
+  otro:  [],
+};
+const HAS_ROOMS=['casa','depto'];
+const ASESORES=['Ronaldo','Denisse'];
+const DOCS_L   =['Escrituras','Libre de gravamen','Avalúo reciente','Plano arquitectónico','Plano catastral','Predial al corriente','Agua al corriente','Régimen de condominio','Carta de posesión','Sin regularizar','En trámite'];
+const EQUIP_L  =['Tinaco','Cisterna','Aljibe','Paneles solares','Calentador solar','Tanque estacionario','Cerca eléctrica','Cámaras de seguridad','Alarma','Portón eléctrico','Elevador','Generador'];
+const SERV_L   =['Agua municipal','Luz CFE','Gas natural','Drenaje municipal','Internet / Fibra','Teléfono','Alumbrado público','Pavimento'];
+const EXTRAS_L =['Terraza','Roof garden','Azotea','Asador','Bodega interna','Cuarto servicio','Área lavado','Estudio / Oficina','Sala juegos','Cine en casa','Gym','Bar','Jacuzzi','Palapa'];
+const COCINA_L =['Cubierta granito','Cubierta cuarzo','Cubierta mármol','Muebles madera','Muebles melanina','Espacio 2 refrigeradores','Desayunador','Isla de cocina','Campana extractora'];
+const HAB_PPAL =['Baño en suite','Medio baño','Vestidor','Walk-in closet','Clóset','Cama matrimonial','Cama queen','Cama king','Balcón privado','Vista exterior','A/C','Sala de estar'];
+const HAB_SEC  =['Baño propio','Baño compartido','Clóset','Cama individual','Cama matrimonial','A/C'];
+const COCHERA_L=['Techada','Descubierta','Subterránea','En privada'];
+const DEM_OP   =['Comprar','Rentar'];
+const DEM_REQ  =['Cochera','Jardín','Alberca','Cuarto servicio','Planta baja','Sin vecinos arriba','Escrituras en orden','Acepta crédito','Cerca de escuelas','Zona comercial'];
+const URG_L    =['Urgente — menos de 1 mes','Normal — 1 a 3 meses','Sin prisa — más de 3 meses'];
+
+// ═══════════════════════════════════════════════════════════════
+// TYPE SELECTOR
+// ═══════════════════════════════════════════════════════════════
+let selectedType=null;
+
+function goTypeSelect(){
+  selectedType=null;
+  const grid=document.getElementById('type-grid');
+  grid.innerHTML='';
+  PROP_TYPES.forEach(t=>{
+    const div=document.createElement('div');
+    div.className='type-card';
+    div.innerHTML=`<div class="t-icon">${t.icon}</div><div class="t-name">${t.name}</div><div class="t-sub">${t.sub}</div>`;
+    div.onclick=()=>{
+      document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('sel'));
+      div.classList.add('sel');
+      selectedType=t.id;
+      document.getElementById('btn-type-continue').disabled=false;
+    };
+    grid.appendChild(div);
+  });
+  document.getElementById('btn-type-continue').disabled=true;
+  showScreen('screen-type');
+}
+
+function startCaptacion(){
+  if(!selectedType)return;
+  initCaptForm(selectedType);
+  showScreen('screen-capt');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CAPTACIÓN FORM
+// ═══════════════════════════════════════════════════════════════
+let captType='', captStep=0, captSteps=[], captThumbs=[];
+
+function initCaptForm(type){
+  captType=type;
+  captStep=0;
+  captThumbs=[];
+  const pt=PROP_TYPES.find(x=>x.id===type);
+  const hasRooms=HAS_ROOMS.includes(type);
+  captSteps=hasRooms
+    ?['General','Ubicación','Medidas','Espacios','Servicios','Precios','Guardar']
+    :['General','Ubicación','Medidas','Servicios','Precios','Guardar'];
+
+  document.getElementById('capt-title').innerHTML=`${pt.icon} <em style="color:var(--gld);font-style:normal;">${pt.name}</em>`;
+  renderStepBar();
+  renderCaptStep();
+}
+
+function renderStepBar(){
+  const bar=document.getElementById('capt-step-bar');
+  bar.innerHTML=captSteps.map((s,i)=>`
+    <button class="step-btn ${i===captStep?'active':i<captStep?'done':''}" onclick="goStep(${i})">
+      <div class="step-dot"></div>${s}
+    </button>`).join('');
+  document.getElementById('capt-step-label').textContent=captSteps[captStep];
+}
+
+function goStep(i){captStep=i;renderStepBar();renderCaptStep();}
+
+function captPrev(){if(captStep>0){captStep--;renderStepBar();renderCaptStep();}}
+function captNext(){if(captStep<captSteps.length-1){captStep++;renderStepBar();renderCaptStep();}}
+
+function renderCaptStep(){
+  const page=document.getElementById('capt-page');
+  const isLast=captStep===captSteps.length-1;
+  const prev=document.getElementById('btn-capt-prev');
+  const next=document.getElementById('btn-capt-next');
+  const save=document.getElementById('btn-capt-save');
+  prev.classList.toggle('hidden',captStep===0);
+  next.classList.toggle('hidden',isLast);
+  save.classList.toggle('hidden',!isLast);
+
+  const s=captSteps[captStep];
+  if(s==='General')    page.innerHTML=buildGeneral();
+  if(s==='Ubicación')  page.innerHTML=buildUbicacion();
+  if(s==='Medidas')    page.innerHTML=buildMedidas();
+  if(s==='Espacios')   page.innerHTML=buildEspacios();
+  if(s==='Servicios')  page.innerHTML=buildServicios();
+  if(s==='Precios')    page.innerHTML=buildPrecios();
+  if(s==='Guardar')    page.innerHTML=buildGuardar();
+
+  // re-init chips/switches/counters after innerHTML
+  afterRender(s);
+  window.scrollTo(0,0);
+}
+
+// ── SAVE STATE helpers (persist form values across steps) ─────
+const F={}; // form state object
+
+function saveCurrentStep(){
+  const s=captSteps[captStep];
+  if(s==='General'){
+    F.asesor=val('f-asesor');F.fecha=val('f-fecha');
+    F.dueno=val('f-dueno');F.telefono=val('f-tel');F.telefono2=val('f-tel2');
+    F.subTipo=getChips('f-subtipo');F.operacion=getChips('f-operacion');
+  }
+  if(s==='Ubicación'){
+    F.lugar=val('f-lugar');F.calle=val('f-calle');F.numero=val('f-numero');
+    F.colonia=val('f-colonia');F.cp=val('f-cp');F.referencias=val('f-ref');
+    F.mapsLink=val('f-maps');F.lat=val('f-lat');F.lng=val('f-lng');
+  }
+  if(s==='Medidas'){
+    F.frente=val('f-frente');F.fondo=val('f-fondo');
+    F.ladoIzq=val('f-izq');F.ladoDer=val('f-der');
+    F.m2Sup=val('f-m2sup');F.m2Const=val('f-m2con');
+    F.plantas=val('f-plantas');F.antiguedad=val('f-ant');
+  }
+  if(s==='Espacios'){
+    F.habPpal=getCtr('c-habppal');F.habSec=getCtr('c-habsec');
+    F.banosC=getCtr('c-banosc');F.banosM=getCtr('c-banosm');
+    F.habPpalF=getChips('f-habppal');F.habSecF=getChips('f-habsec');
+    F.cochera=getSw('cochera');F.cocheraCajones=val('f-cajones');F.cocheraTipo=getChips('f-cocheratipo');
+    F.patio=getSw('patio');F.patioOpc=getChips('f-patioopc');
+    F.sala=getSw('sala');F.salaOpc=getChips('f-salaopc');
+    F.cocina=getSw('cocina');F.cocinaAcab=getChips('f-cocinaacab');
+    F.comedor=getSw('comedor');F.lavado=getSw('lavado');
+    F.alberca=getSw('alberca');F.cuartoServ=getSw('cuartoserv');
+    F.bodegaInt=getSw('bodegaint');F.terraza=getSw('terraza');
+    F.extras=getChips('f-extras');
+  }
+  if(s==='Servicios'){
+    F.servicios=getChips('f-servicios');F.equipamiento=getChips('f-equip');
+    F.tinacoL=val('f-tinacol');F.cistL=val('f-cistl');
+    F.docs=getChips('f-docs');F.llaves=val('f-llaves');
+  }
+  if(s==='Precios'){
+    F.precioSol=val('f-preciosol');F.precioNeg=val('f-precioneg');
+    F.precioNuestro=val('f-precionues');F.comisionPct=val('f-compct');
+    F.comisionMXN=val('f-commxn');F.vigencia=val('f-vigencia');
+    F.firmaContrato=val('f-firma');
+    F.contratoFirmado=val('f-contrato')==='si';
+    F.publicar=val('f-publicar')==='si';
+    F.notas=val('f-notas');
+  }
+  if(s==='Guardar'){
+    F.potencial=val('f-potencial');
+  }
+}
+
+function captPrevSave(){saveCurrentStep();captPrev();}
+function captNextSave(){saveCurrentStep();captNext();}
+// override nav buttons
+document.getElementById('btn-capt-prev').onclick=captPrevSave;
+document.getElementById('btn-capt-next').onclick=captNextSave;
+
+function val(id){const el=document.getElementById(id);return el?el.value:'';}
+
+// ── BUILD STEPS ───────────────────────────────────────────────
+function buildGeneral(){
+  const pt=PROP_TYPES.find(x=>x.id===captType);
+  const hasSub=(SUBTYPES[captType]||[]).length>0;
+  return `
+  <div class="card">
+    <div class="card-head">🗂 Control interno</div>
+    <div class="g2">
+      <div class="field"><label>Asesor <span class="req">*</span></label>
+        <select id="f-asesor">${ASESORES.map(a=>`<option value="${a}"${F.asesor===a?' selected':''}>${a}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Fecha de captación</label>
+        <input type="date" id="f-fecha" value="${F.fecha||today()}">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">👤 Propietario</div>
+    <div class="field"><label>Nombre completo <span class="req">*</span></label>
+      <input type="text" id="f-dueno" placeholder="Juan García López" value="${esc(F.dueno||'')}">
+    </div>
+    <div class="g2 mt">
+      <div class="field"><label>Teléfono principal</label><input type="tel" id="f-tel" placeholder="55 1234 5678" value="${esc(F.telefono||'')}"></div>
+      <div class="field"><label>Teléfono alternativo</label><input type="tel" id="f-tel2" placeholder="Otro" value="${esc(F.telefono2||'')}"></div>
+    </div>
+  </div>
+  ${hasSub?`<div class="card">
+    <div class="card-head">${pt.icon} Subtipo de ${pt.name}</div>
+    <div class="chips" id="f-subtipo"></div>
+  </div>`:'<div id="f-subtipo" class="hidden"></div>'}
+  <div class="card">
+    <div class="card-head">📋 Operación</div>
+    <div class="chips" id="f-operacion"></div>
+  </div>`;
+}
+
+function buildUbicacion(){
+  return `
+  <div class="card">
+    <div class="card-head">📍 Dirección</div>
+    <div class="field"><label>Ciudad / Municipio</label>
+      <div class="gps-row">
+        <input type="text" id="f-lugar" placeholder="Ej. Querétaro" value="${esc(F.lugar||'')}">
+        <button class="btn btn-sm" onclick="getGPS()">📡 GPS</button>
+      </div>
+    </div>
+    <div class="g2 mt">
+      <div class="field"><label>Calle</label><input type="text" id="f-calle" placeholder="Nombre de la calle" value="${esc(F.calle||'')}"></div>
+      <div class="field"><label>Número</label><input type="text" id="f-numero" placeholder="Ext / Int" value="${esc(F.numero||'')}"></div>
+    </div>
+    <div class="g2 mt">
+      <div class="field"><label>Colonia / Fracc.</label><input type="text" id="f-colonia" placeholder="Colonia" value="${esc(F.colonia||'')}"></div>
+      <div class="field"><label>Código postal</label><input type="text" id="f-cp" placeholder="CP" maxlength="5" value="${esc(F.cp||'')}"></div>
+    </div>
+    <div class="field mt"><label>Referencias / cómo llegar</label>
+      <textarea id="f-ref" placeholder="Entre calles, color de fachada...">${esc(F.referencias||'')}</textarea>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">🗺 Google Maps</div>
+    <div class="field"><label>Pegar link de Google Maps</label>
+      <input type="text" id="f-maps" placeholder="https://maps.google.com/..." value="${esc(F.mapsLink||'')}">
+    </div>
+    <div class="g2 mt">
+      <div class="field"><label>Latitud</label><input type="text" id="f-lat" readonly value="${esc(F.lat||'')}"></div>
+      <div class="field"><label>Longitud</label><input type="text" id="f-lng" readonly value="${esc(F.lng||'')}"></div>
+    </div>
+    ${F.lat&&F.lng?`<div style="margin-top:10px;font-size:13px;">
+      <a href="https://maps.google.com/?q=${F.lat},${F.lng}" target="_blank">🗺 Ver en Google Maps →</a>
+    </div>`:''}
+  </div>`;
+}
+
+function buildMedidas(){
+  const hasRooms=HAS_ROOMS.includes(captType);
+  return `
+  <div class="card">
+    <div class="card-head">📐 Linderos (metros lineales)</div>
+    <div class="g4">
+      <div class="field"><label>⬆ Frente</label><input type="number" id="f-frente" placeholder="0.00" value="${esc(F.frente||'')}" oninput="calcM2()"></div>
+      <div class="field"><label>⬇ Fondo</label><input type="number" id="f-fondo" placeholder="0.00" value="${esc(F.fondo||'')}" oninput="calcM2()"></div>
+      <div class="field"><label>⬅ Izq.</label><input type="number" id="f-izq" placeholder="0.00" value="${esc(F.ladoIzq||'')}"></div>
+      <div class="field"><label>➡ Der.</label><input type="number" id="f-der" placeholder="0.00" value="${esc(F.ladoDer||'')}"></div>
+    </div>
+    <div class="dim-box">
+      <span>M² superficie calculada</span>
+      <span id="m2-calc">${F.m2Sup?F.m2Sup+' m²':'—'}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">🏗 Construcción</div>
+    <div class="g2">
+      <div class="field"><label>M² Terreno total</label><input type="number" id="f-m2sup" placeholder="m²" value="${esc(F.m2Sup||'')}"></div>
+      <div class="field"><label>M² Construcción</label><input type="number" id="f-m2con" placeholder="m²" value="${esc(F.m2Const||'')}"></div>
+    </div>
+    ${hasRooms?`<div class="g2 mt">
+      <div class="field"><label>Número de plantas</label>
+        <select id="f-plantas">
+          <option value="">Seleccionar</option>
+          ${['1 planta','2 plantas','3 plantas','4+ plantas'].map(p=>`<option${F.plantas===p?' selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0=nuevo" value="${esc(F.antiguedad||'')}"></div>
+    </div>`:'<input id="f-plantas" class="hidden"><input id="f-ant" class="hidden">'}
+  </div>`;
+}
+
+function calcM2(){
+  const f=parseFloat(document.getElementById('f-frente')?.value)||0;
+  const fo=parseFloat(document.getElementById('f-fondo')?.value)||0;
+  const box=document.getElementById('m2-calc');
+  if(box){
+    if(f&&fo){const v=(f*fo).toFixed(2);box.textContent=v+' m²';const m=document.getElementById('f-m2sup');if(m)m.value=v;}
+    else box.textContent='—';
+  }
+}
+
+function buildEspacios(){
+  return `
+  <div class="card">
+    <div class="card-head">🛏 Habitaciones y baños</div>
+    ${buildCtr('c-habppal','Habitación principal',F.habPpal||1)}
+    ${buildCtr('c-habsec','Habitaciones secundarias',F.habSec||2)}
+    ${buildCtr('c-banosc','Baños completos',F.banosC||1)}
+    ${buildCtr('c-banosm','Medios baños',F.banosM||1)}
+  </div>
+  <div class="card">
+    <div class="card-head">🛏 Hab. principal — detalles</div>
+    <div class="chips" id="f-habppal"></div>
+  </div>
+  <div class="card">
+    <div class="card-head">🛏 Hab. secundarias — detalles</div>
+    <div class="chips" id="f-habsec"></div>
+  </div>
+  <div class="card">
+    <div class="card-head">🏠 Áreas internas</div>
+    ${buildSw('cochera','🚗','Cochera')}
+    <div class="sw-extra${getSw('cochera')?' show':''}" id="swx-cochera">
+      <div class="g2" style="margin-bottom:8px;">
+        <div class="field"><label>Cajones</label><input type="number" id="f-cajones" placeholder="2" value="${esc(F.cocheraCajones||'')}"></div>
+        <div></div>
+      </div>
+      <div class="chips" id="f-cocheratipo"></div>
+    </div>
+    ${buildSw('patio','🌿','Jardín / Patio')}
+    <div class="sw-extra${getSw('patio')?' show':''}" id="swx-patio">
+      <div class="chips" id="f-patioopc"></div>
+    </div>
+    ${buildSw('sala','🛋️','Sala')}
+    <div class="sw-extra${getSw('sala')?' show':''}" id="swx-sala">
+      <div class="chips" id="f-salaopc"></div>
+    </div>
+    ${buildSw('cocina','🍳','Cocina')}
+    <div class="sw-extra${getSw('cocina')?' show':''}" id="swx-cocina">
+      <div class="chips" id="f-cocinaacab"></div>
+    </div>
+    ${buildSw('comedor','🍽️','Comedor')}
+    ${buildSw('lavado','🧺','Área de lavado')}
+    ${buildSw('alberca','🏊','Alberca')}
+    ${buildSw('cuartoserv','🏠','Cuarto de servicio')}
+    ${buildSw('bodegaint','📦','Bodega interna')}
+    ${buildSw('terraza','🌇','Terraza / Roof')}
+  </div>
+  <div class="card">
+    <div class="card-head">✨ Especiales</div>
+    <div class="chips" id="f-extras"></div>
+  </div>`;
+}
+
+function buildSw(id,icon,label){
+  const on=getSw(id);
+  return `<div class="sw-row">
+    <span class="sw-label">${icon} ${label}</span>
+    <div class="sw${on?' on':''}" id="sw-${id}" onclick="toggleSw('${id}')"><div class="sw-knob"></div></div>
+  </div>`;
+}
+
+function buildCtr(id,label,val){
+  setCtr(id,val);
+  return `<div class="ctr-row">
+    <span class="ctr-label">${label}</span>
+    <div class="ctr-ctrl">
+      <button class="ctr-btn" onclick="ctr('${id}',-1)">−</button>
+      <span class="ctr-val" id="${id}">${val}</span>
+      <button class="ctr-btn" onclick="ctr('${id}',1)">+</button>
+    </div>
+  </div>`;
+}
+
+function buildServicios(){
+  return `
+  <div class="card">
+    <div class="card-head">⚡ Servicios disponibles</div>
+    <div class="chips" id="f-servicios"></div>
+  </div>
+  <div class="card">
+    <div class="card-head">🔧 Equipamiento</div>
+    <div class="chips" id="f-equip"></div>
+    <div id="tinaco-field" class="field mt hidden"><label>Litros del tinaco</label><input type="number" id="f-tinacol" placeholder="Ej. 1100" value="${esc(F.tinacoL||'')}"></div>
+    <div id="cisterna-field" class="field mt hidden"><label>Litros de la cisterna</label><input type="number" id="f-cistl" placeholder="Ej. 5000" value="${esc(F.cistL||'')}"></div>
+  </div>
+  <div class="card">
+    <div class="card-head">📄 Documentación</div>
+    <div class="chips" id="f-docs"></div>
+  </div>
+  <div class="card">
+    <div class="card-head">🔑 Llaves y accesos</div>
+    <textarea id="f-llaves" placeholder="Ej: 2 juegos de llaves, portón automático, código de alarma...">${esc(F.llaves||'')}</textarea>
+  </div>`;
+}
+
+function buildPrecios(){
+  return `
+  <div class="card">
+    <div class="card-head">💰 Precios</div>
+    <div class="field"><label>Precio solicitado por el dueño</label>
+      <div class="price-wrap"><span class="price-prefix">$</span>
+        <input type="number" id="f-preciosol" placeholder="0" value="${esc(F.precioSol||'')}" oninput="calcComision()">
+      </div>
+    </div>
+    <div class="g2 mt">
+      <div class="field"><label>Precio negociable</label>
+        <div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-precioneg" placeholder="0" value="${esc(F.precioNeg||'')}"></div>
+      </div>
+      <div class="field"><label>Precio por nosotros</label>
+        <div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-precionues" placeholder="0" value="${esc(F.precioNuestro||'')}"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">🤝 Comisión y contrato</div>
+    <div class="g2">
+      <div class="field"><label>Comisión (%)</label>
+        <input type="number" id="f-compct" placeholder="Ej. 5" value="${esc(F.comisionPct||'')}" oninput="calcComision()">
+      </div>
+      <div class="field"><label>Comisión en pesos</label>
+        <div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="f-commxn" readonly placeholder="Auto" value="${esc(F.comisionMXN||'')}"></div>
+      </div>
+    </div>
+    <div class="g2 mt">
+      <div class="field"><label>Fecha de firma</label><input type="date" id="f-firma" value="${esc(F.firmaContrato||'')}"></div>
+      <div class="field"><label>Vigencia</label>
+        <select id="f-vigencia">
+          <option value="">Seleccionar</option>
+          ${['3 meses','6 meses','12 meses','Sin límite'].map(v=>`<option${F.vigencia===v?' selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="g2 mt">
+      <div class="field"><label>¿Contrato firmado?</label>
+        <select id="f-contrato">
+          <option value="no"${!F.contratoFirmado?' selected':''}>Pendiente</option>
+          <option value="si"${F.contratoFirmado?' selected':''}>Sí, firmado ✓</option>
+        </select>
+      </div>
+      <div class="field"><label>¿Permiso para publicar?</label>
+        <select id="f-publicar">
+          <option value="si"${F.publicar!==false?' selected':''}>Sí, público</option>
+          <option value="no"${F.publicar===false?' selected':''}>No, privado</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">📸 Fotos de la propiedad</div>
+    <div class="file-drop" onclick="document.getElementById('fotos-input').click()">
+      <div class="icon">📷</div>
+      <p>Toca para agregar fotos</p>
+      <small>JPG, PNG — múltiples archivos</small>
+      <input type="file" id="fotos-input" style="display:none" accept="image/*" multiple onchange="handleFotos(this)">
+    </div>
+    <div class="thumb-grid" id="thumbs-wrap">
+      ${captThumbs.map(s=>`<img src="${s}" class="thumb" alt="">`).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">📝 Notas y observaciones</div>
+    <textarea id="f-notas" placeholder="Condiciones especiales, urgencia de venta, estado del inmueble...">${esc(F.notas||'')}</textarea>
+  </div>`;
+}
+
+function buildGuardar(){
+  const pt=PROP_TYPES.find(x=>x.id===captType);
+  const hasRooms=HAS_ROOMS.includes(captType);
+  const rows=[
+    ['Tipo',pt.icon+' '+pt.name],['Dueño',F.dueno],['Asesor',F.asesor],['Fecha',F.fecha],
+    ['Ubicación',[F.colonia,F.lugar].filter(Boolean).join(', ')],
+    ['M² Terreno',F.m2Sup?F.m2Sup+' m²':''],
+    ['M² Construcción',F.m2Const?F.m2Const+' m²':''],
+    ['Precio solicitado',fmtMXN(F.precioSol)],
+    ['Comisión',F.comisionPct?F.comisionPct+'%':''],
+    ['Contrato',F.contratoFirmado?'✅ Firmado':'⏳ Pendiente'],
+    ['Publicar',F.publicar!==false?'Sí':'No — privado'],
+    hasRooms?['Habitaciones',`${F.habPpal||1}P + ${F.habSec||2}S`]:null,
+  ].filter(Boolean);
+
+  return `
+  <div class="card">
+    <div class="card-head">🤖 Análisis IA</div>
+    <button class="btn btn-primary btn-full" onclick="doAI()" id="btn-ai" style="margin-bottom:12px;">✨ Generar análisis automático</button>
+    <div id="ai-result"></div>
+    <div class="field mt">
+      <label>O escribe el análisis / potencial manualmente</label>
+      <textarea id="f-potencial" placeholder="Análisis de potencial, observaciones finales..." rows="4">${esc(F.potencial||'')}</textarea>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">✅ Resumen de captación</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+      ${rows.map(([k,v])=>`
+        <div style="background:var(--s2);border:1px solid var(--ln);border-radius:8px;padding:9px 12px;">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:3px;">${esc(k)}</div>
+          <div style="font-size:13px;color:var(--txt);font-weight:500;">${esc(v||'—')}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function calcComision(){
+  const p=parseFloat(document.getElementById('f-preciosol')?.value)||0;
+  const pct=parseFloat(document.getElementById('f-compct')?.value)||0;
+  const el=document.getElementById('f-commxn');
+  if(el&&p&&pct) el.value=(p*pct/100).toFixed(0);
+}
+
+function handleFotos(input){
+  Array.from(input.files).forEach(f=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      captThumbs.push(ev.target.result);
+      const wrap=document.getElementById('thumbs-wrap');
+      if(wrap){const img=document.createElement('img');img.src=ev.target.result;img.className='thumb';wrap.appendChild(img);}
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function getGPS(){
+  if(!navigator.geolocation){showToast('GPS no disponible',true);return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude.toFixed(6), lng=pos.coords.longitude.toFixed(6);
+    const elLat=document.getElementById('f-lat'), elLng=document.getElementById('f-lng');
+    if(elLat)elLat.value=lat; if(elLng)elLng.value=lng;
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+      .then(r=>r.json()).then(a=>{
+        const ad=a.address;
+        const el=id=>document.getElementById(id);
+        if(el('f-lugar')&&!el('f-lugar').value) el('f-lugar').value=ad.city||ad.town||'';
+        if(el('f-colonia')&&!el('f-colonia').value) el('f-colonia').value=ad.suburb||ad.neighbourhood||'';
+        if(el('f-cp')&&!el('f-cp').value) el('f-cp').value=ad.postcode||'';
+        if(el('f-calle')&&!el('f-calle').value) el('f-calle').value=ad.road||'';
+      }).catch(()=>{});
+    showToast('📍 Ubicación capturada');
+  },()=>showToast('No se pudo obtener ubicación',true));
+}
+
+async function doAI(){
+  const btn=document.getElementById('btn-ai');
+  const res=document.getElementById('ai-result');
+  if(btn)btn.disabled=true;
+  if(res)res.innerHTML='<p style="color:var(--sub);font-size:13px;">Analizando propiedad con IA...</p>';
+  const pt=PROP_TYPES.find(x=>x.id===captType);
+  const hasRooms=HAS_ROOMS.includes(captType);
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:800,
+        messages:[{role:'user',content:`Analiza esta propiedad en México y genera:\n1. POTENCIAL DE VENTA (2-3 oraciones)\n2. OBSERVACIONES para el asesor (máx 3 puntos)\n3. PRECIO SUGERIDO con justificación\n\nTipo: ${pt?.name} — ${(F.subTipo||[]).join(', ')}\nUbicación: ${F.colonia||''}, ${F.lugar||''}\nM² terreno: ${F.m2Sup||'n/d'} | M² construcción: ${F.m2Const||'n/d'}\nPrecio solicitado: ${fmtMXN(F.precioSol)}\n${hasRooms?`Hab: ${F.habPpal||1}P + ${F.habSec||2}S | Baños: ${F.banosC||1}C ${F.banosM||1}M`:''}\nExtras: ${(F.extras||[]).join(', ')||'ninguno'}\nNotas: ${F.notas||'—'}\n\nEspañol, máx 200 palabras, profesional.`}]
+      })
+    });
+    const j=await r.json();
+    const txt=j.content?.[0]?.text||'No se pudo generar.';
+    if(res)res.innerHTML=`<div class="ai-box"><div class="ai-title">🏠 Análisis de potencial</div><p class="ai-text">${esc(txt)}</p></div>`;
+    const ta=document.getElementById('f-potencial');
+    if(ta&&!ta.value)ta.value=txt;
+  }catch{
+    if(res)res.innerHTML='<p style="color:var(--red);font-size:13px;">Sin conexión con IA. Escribe el análisis manualmente.</p>';
+  }
+  if(btn)btn.disabled=false;
+}
+
+// ── AFTER RENDER: re-init chips/switches/counters ─────────────
+function afterRender(step){
+  if(step==='General'){
+    if(SUBTYPES[captType]?.length) initChips('f-subtipo',SUBTYPES[captType],true,F.subTipo||[]);
+    initChips('f-operacion',['Venta','Renta','Venta y Renta','Preventa','Cesión de derechos'],true,F.operacion||[]);
+  }
+  if(step==='Espacios'){
+    setCtr('c-habppal',F.habPpal||1);setCtr('c-habsec',F.habSec||2);
+    setCtr('c-banosc',F.banosC||1);setCtr('c-banosm',F.banosM||1);
+    initChips('f-habppal',HAB_PPAL,true,F.habPpalF||[]);
+    initChips('f-habsec',HAB_SEC,true,F.habSecF||[]);
+    initChips('f-cocheratipo',COCHERA_L,true,F.cocheraTipo||[]);
+    initChips('f-patioopc',['Patio frente','Patio atrás','Jardín lateral'],true,F.patioOpc||[]);
+    initChips('f-salaopc',['Sala chica','Sala mediana','Sala grande','Sala-comedor'],true,F.salaOpc||[]);
+    initChips('f-cocinaacab',COCINA_L,true,F.cocinaAcab||[]);
+    initChips('f-extras',EXTRAS_L,true,F.extras||[]);
+    // restore switch states
+    ['cochera','patio','sala','cocina','comedor','lavado','alberca','cuartoserv','bodegaint','terraza'].forEach(id=>{
+      const wasOn=F[id.replace('serv','Serv').replace('int','Int')];
+      if(id==='cochera'&&F.cochera) initSw('cochera',true);
+      if(id==='patio'&&F.patio) initSw('patio',true);
+      if(id==='sala'&&F.sala) initSw('sala',true);
+      if(id==='cocina'&&F.cocina) initSw('cocina',true);
+      if(id==='comedor'&&F.comedor) initSw('comedor',true);
+      if(id==='lavado'&&F.lavado) initSw('lavado',true);
+      if(id==='alberca'&&F.alberca) initSw('alberca',true);
+      if(id==='cuartoserv'&&F.cuartoServ) initSw('cuartoserv',true);
+      if(id==='bodegaint'&&F.bodegaInt) initSw('bodegaint',true);
+      if(id==='terraza'&&F.terraza) initSw('terraza',true);
+    });
+  }
+  if(step==='Servicios'){
+    initChips('f-servicios',SERV_L,true,F.servicios||[]);
+    initChips('f-equip',EQUIP_L,true,F.equipamiento||[]);
+    initChips('f-docs',DOCS_L,true,F.docs||[]);
+    // show litros fields if selected
+    document.getElementById('f-equip').querySelectorAll('.chip').forEach(c=>{
+      if(c.textContent==='Tinaco'&&c.classList.contains('on')) document.getElementById('tinaco-field')?.classList.remove('hidden');
+      if(c.textContent==='Cisterna'&&c.classList.contains('on')) document.getElementById('cisterna-field')?.classList.remove('hidden');
+    });
+    // watch for chip clicks to show/hide litros
+    document.getElementById('f-equip').addEventListener('click',e=>{
+      if(e.target.classList.contains('chip')){
+        setTimeout(()=>{
+          const chips=[...document.getElementById('f-equip').querySelectorAll('.chip.on')].map(c=>c.textContent);
+          document.getElementById('tinaco-field')?.classList.toggle('hidden',!chips.includes('Tinaco'));
+          document.getElementById('cisterna-field')?.classList.toggle('hidden',!chips.includes('Cisterna'));
+        },50);
+      }
+    });
+  }
+}
+
+// ── SAVE CAPTACIÓN ────────────────────────────────────────────
+function saveCaptacion(){
+  saveCurrentStep();
+  if(!F.dueno){showToast('Escribe el nombre del dueño',true);return;}
+  const rec={
+    ...F,
+    id:uid(),tipo:captType,fotos:captThumbs,
+    createdAt:new Date().toISOString()
+  };
+  props_=[rec,...props_];
+  DB.set('inmo_p',props_);
+  renderProps();
+  updateCounts();
+  showToast('✅ Captación guardada correctamente');
+  // reset form state
+  Object.keys(F).forEach(k=>delete F[k]);
+  showScreen('screen-main');
+  switchTab('props');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DETAIL VIEW
+// ═══════════════════════════════════════════════════════════════
+function openDetail(id){
+  const p=props_.find(x=>x.id===id);
+  if(!p)return;
+  curDetail=id;
+  const pt=PROP_TYPES.find(x=>x.id===p.tipo);
+  document.getElementById('detail-title').innerHTML=`${pt?.icon||''} <em style="color:var(--gld);font-style:normal;">${esc(p.dueno||'Propiedad')}</em>`;
+
+  const rows=[
+    ['Tipo',pt?pt.icon+' '+pt.name:''],
+    ['Asesor',p.asesor],['Fecha captación',p.fecha],
+    ['Dueño',p.dueno],['Teléfono',p.telefono],['Tel. 2',p.telefono2],
+    ['Subtipo',(p.subTipo||[]).join(', ')],['Operación',(p.operacion||[]).join(', ')],
+    ['Ciudad',p.lugar],['Calle',p.calle],['Número',p.numero],
+    ['Colonia',p.colonia],['CP',p.cp],['Referencias',p.referencias],
+    ['Frente',p.frente?p.frente+' m':''],['Fondo',p.fondo?p.fondo+' m':''],
+    ['Lado izq.',p.ladoIzq?p.ladoIzq+' m':''],['Lado der.',p.ladoDer?p.ladoDer+' m':''],
+    ['M² Terreno',p.m2Sup?p.m2Sup+' m²':''],['M² Construcción',p.m2Const?p.m2Const+' m²':''],
+    ['Plantas',p.plantas],['Antigüedad',p.antiguedad?p.antiguedad+' años':''],
+    ['Hab. principal',p.habPpal!==undefined?String(p.habPpal):''],
+    ['Hab. secundarias',p.habSec!==undefined?String(p.habSec):''],
+    ['Baños completos',p.banosC!==undefined?String(p.banosC):''],
+    ['Medios baños',p.banosM!==undefined?String(p.banosM):''],
+    ['Hab. principal detalles',(p.habPpalF||[]).join(', ')],
+    ['Hab. secundarias detalles',(p.habSecF||[]).join(', ')],
+    ['Cochera',p.cochera?'Sí — '+(p.cocheraCajones||1)+' cajones':'No'],
+    ['Tipo cochera',(p.cocheraTipo||[]).join(', ')],
+    ['Patio/Jardín',p.patio?'Sí':'No'],['Tipo patio',(p.patioOpc||[]).join(', ')],
+    ['Sala',p.sala?'Sí':'No'],['Cocina',p.cocina?'Sí':'No'],
+    ['Acabados cocina',(p.cocinaAcab||[]).join(', ')],
+    ['Comedor',p.comedor?'Sí':'No'],['Área lavado',p.lavado?'Sí':'No'],
+    ['Alberca',p.alberca?'Sí':'No'],['Cuarto servicio',p.cuartoServ?'Sí':'No'],
+    ['Bodega interna',p.bodegaInt?'Sí':'No'],['Terraza',p.terraza?'Sí':'No'],
+    ['Especiales',(p.extras||[]).join(', ')],
+    ['Servicios',(p.servicios||[]).join(', ')],
+    ['Equipamiento',(p.equipamiento||[]).join(', ')],
+    ['Tinaco litros',p.tinacoL?p.tinacoL+' L':''],
+    ['Cisterna litros',p.cistL?p.cistL+' L':''],
+    ['Documentación',(p.docs||[]).join(', ')],
+    ['Llaves',p.llaves],
+    ['Precio solicitado',fmtMXN(p.precioSol)],
+    ['Precio negociable',fmtMXN(p.precioNeg)],
+    ['Precio nuestro',fmtMXN(p.precioNuestro)],
+    ['Comisión',p.comisionPct?p.comisionPct+'%':''],
+    ['Comisión MXN',fmtMXN(p.comisionMXN)],
+    ['Vigencia',p.vigencia],['Firma contrato',p.firmaContrato],
+    ['Contrato firmado',p.contratoFirmado?'✅ Sí':'⏳ Pendiente'],
+    ['Permiso publicar',p.publicar?'Sí':'No — privado'],
+    ['Notas',p.notas],['Análisis / Potencial',p.potencial],
+  ].filter(([,v])=>v!==''&&v!==undefined&&v!==null);
+
+  let html='';
+
+  if(p.mapsLink){
+    html+=`<div style="margin-bottom:14px;"><a href="${esc(p.mapsLink)}" target="_blank">🗺 Ver en Google Maps →</a></div>`;
+  }
+  if(p.fotos?.length){
+    html+=`<div class="card"><div class="card-head">📸 Fotos</div><div class="thumb-grid">${p.fotos.map(s=>`<img src="${s}" class="thumb" alt="">`).join('')}</div></div>`;
+  }
+  html+=`<div class="card"><div class="card-head">📋 Ficha completa</div>`;
+  rows.forEach(([k,v])=>{
+    html+=`<div class="detail-row"><span class="detail-key">${esc(k)}</span><span class="detail-val">${esc(String(v))}</span></div>`;
+  });
+  html+=`</div>`;
+
+  document.getElementById('detail-page').innerHTML=html;
+  showScreen('screen-detail');
+}
+
+function deleteProp(){
+  if(!curDetail)return;
+  if(!confirm('¿Eliminar esta propiedad?'))return;
+  props_=props_.filter(p=>p.id!==curDetail);
+  DB.set('inmo_p',props_);
+  renderProps();updateCounts();
+  showToast('🗑 Propiedad eliminada');
+  showScreen('screen-main');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER LISTS
+// ═══════════════════════════════════════════════════════════════
+function renderProps(){
+  const q=(document.getElementById('search-props')?.value||'').toLowerCase();
+  const list=document.getElementById('list-props');
+  const filtered=props_.filter(p=>[p.dueno,p.colonia,p.lugar,PROP_TYPES.find(x=>x.id===p.tipo)?.name].join(' ').toLowerCase().includes(q));
+  if(!filtered.length){
+    list.innerHTML=`<div class="empty"><div class="e-icon">🏠</div><div class="e-title">Sin propiedades captadas</div><div class="e-sub">Toca "+ Nueva captación" para comenzar</div></div>`;
+    return;
+  }
+  list.innerHTML=filtered.map(p=>{
+    const pt=PROP_TYPES.find(x=>x.id===p.tipo);
+    const bdgs=[
+      pt?`<span class="bdg bdg-blue">${pt.icon} ${esc(pt.name)}</span>`:'',
+      p.colonia?`<span>📍 ${esc(p.colonia)}</span>`:'',
+      p.lugar?`<span>${esc(p.lugar)}</span>`:'',
+      p.m2Sup?`<span>📐 ${esc(p.m2Sup)} m²</span>`:'',
+      (p.operacion||[]).includes('Renta')?'<span class="bdg bdg-green">Renta</span>':'',
+      (p.operacion||[]).includes('Venta')?'<span class="bdg bdg-gold">Venta</span>':'',
+      p.contratoFirmado?'<span class="bdg bdg-green">Contrato ✓</span>':'',
+      p.publicar===false?'<span class="bdg bdg-red">Privado</span>':'',
+    ].filter(Boolean).join('');
+    const price=p.precioSol?`<div class="prop-price"><div class="amount">${fmtMXN(p.precioSol)}</div><div class="label">precio solicitado</div></div>`:'';
+    return `<div class="prop-card" onclick="openDetail('${p.id}')">
+      <div style="flex:1;min-width:0;">
+        <div class="prop-name">${esc(p.dueno||'Sin nombre')}</div>
+        <div class="prop-meta">${bdgs}</div>
+      </div>${price}
+    </div>`;
+  }).join('');
+}
+
+function renderDemanda(){
+  const q=(document.getElementById('search-demanda')?.value||'').toLowerCase();
+  const list=document.getElementById('list-demanda');
+  const filtered=demandas.filter(d=>[d.nombre,d.zonas,...(d.tipo||[])].join(' ').toLowerCase().includes(q));
+  if(!filtered.length){
+    list.innerHTML=`<div class="empty"><div class="e-icon">🔍</div><div class="e-title">Sin demanda registrada</div><div class="e-sub">Registra qué está buscando cada cliente</div></div>`;
+    return;
+  }
+  list.innerHTML=filtered.map(d=>{
+    const bdgs=[
+      ...(d.operacion||[]).map(o=>`<span class="bdg bdg-blue">${esc(o)}</span>`),
+      d.tipo?.[0]?`<span>${esc(d.tipo[0])}</span>`:'',
+      d.zonas?`<span>📍 ${esc(d.zonas)}</span>`:'',
+      (d.urgencia||[])[0]?.includes('Urgente')?'<span class="bdg bdg-red">Urgente</span>':'',
+    ].filter(Boolean).join('');
+    const price=d.presupMax?`<div class="prop-price"><div class="amount">${fmtMXN(d.presupMax)}</div><div class="label">presupuesto máx</div></div>`:'';
+    return `<div class="prop-card">
+      <div style="flex:1;min-width:0;">
+        <div class="prop-name">${esc(d.nombre||'Cliente sin nombre')}</div>
+        <div class="prop-meta">${bdgs}</div>
+      </div>${price}
+    </div>`;
+  }).join('');
+}
+
+function renderVisitas(){
+  const list=document.getElementById('list-visitas');
+  if(!visitas.length){
+    list.innerHTML=`<div class="empty"><div class="e-icon">📅</div><div class="e-title">Sin visitas agendadas</div><div class="e-sub">Agenda visitas para tus propiedades</div></div>`;
+    return;
+  }
+  list.innerHTML=visitas.map(v=>`
+    <div class="prop-card" style="cursor:default;">
+      <div style="flex:1;">
+        <div class="prop-name">${esc(v.nombre||'Cliente')}</div>
+        <div class="prop-meta">
+          <span>📅 ${esc(v.fecha)}${v.hora?' — '+esc(v.hora):''}</span>
+          ${v.telefono?`<span>📱 ${esc(v.telefono)}</span>`:''}
+        </div>
+        ${v.notas?`<div style="font-size:12px;color:var(--dim);margin-top:5px;">${esc(v.notas)}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function renderCRM(){
+  document.getElementById('crm-stats').innerHTML=[
+    {icon:'🏠',label:'Propiedades captadas',val:props_.length,color:'var(--blu)'},
+    {icon:'🔍',label:'Clientes buscando',val:demandas.length,color:'var(--gld)'},
+    {icon:'📅',label:'Visitas agendadas',val:visitas.length,color:'var(--grn)'},
+    {icon:'✅',label:'Contratos firmados',val:props_.filter(p=>p.contratoFirmado).length,color:'var(--grn)'},
+    {icon:'📢',label:'Propiedades para publicar',val:props_.filter(p=>p.publicar!==false).length,color:'var(--amb)'},
+    {icon:'🔒',label:'Propiedades privadas',val:props_.filter(p=>p.publicar===false).length,color:'var(--dim)'},
+  ].map(s=>`
+    <div class="stat-card">
+      <span class="stat-label">${s.icon} ${s.label}</span>
+      <span class="stat-val" style="color:${s.color};">${s.val}</span>
+    </div>`).join('');
+}
+
+function updateCounts(){
+  document.getElementById('count-props').textContent=props_.length;
+  document.getElementById('count-demanda').textContent=demandas.length;
+  document.getElementById('count-visitas').textContent=visitas.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEMANDA SAVE
+// ═══════════════════════════════════════════════════════════════
+function initDemandaForm(){
+  initChips('dem-operacion',DEM_OP);
+  initChips('dem-tipo',PROP_TYPES.map(t=>t.icon+' '+t.name));
+  initChips('dem-req',DEM_REQ);
+  initChips('dem-urgencia',URG_L,false);
+  setCtr('dem-hab',0);
+}
+
+function saveDemanda(){
+  const nombre=document.getElementById('dem-nombre').value.trim();
+  if(!nombre){showToast('Escribe el nombre del cliente',true);return;}
+  const rec={
+    id:uid(),createdAt:new Date().toISOString(),
+    nombre,
+    telefono:document.getElementById('dem-tel').value,
+    email:document.getElementById('dem-email').value,
+    operacion:getChips('dem-operacion'),
+    tipo:getChips('dem-tipo'),
+    presupMin:document.getElementById('dem-min').value,
+    presupMax:document.getElementById('dem-max').value,
+    zonas:document.getElementById('dem-zonas').value,
+    m2MinTer:document.getElementById('dem-m2ter').value,
+    m2MinConst:document.getElementById('dem-m2con').value,
+    habitaciones:getCtr('dem-hab'),
+    requisitos:getChips('dem-req'),
+    urgencia:getChips('dem-urgencia'),
+    notas:document.getElementById('dem-notas').value,
+  };
+  demandas=[rec,...demandas];
+  DB.set('inmo_d',demandas);
+  renderDemanda();updateCounts();
+  showToast('✅ Demanda guardada');
+  // reset
+  ['dem-nombre','dem-tel','dem-email','dem-min','dem-max','dem-zonas','dem-m2ter','dem-m2con','dem-notas'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  setCtr('dem-hab',0);
+  initDemandaForm();
+  showScreen('screen-main');
+  switchTab('demanda');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VISITA SAVE
+// ═══════════════════════════════════════════════════════════════
+function populateVisitaSelect(){
+  const sel=document.getElementById('vis-prop');
+  sel.innerHTML='<option value="">Seleccionar...</option>';
+  props_.forEach(p=>{
+    const pt=PROP_TYPES.find(x=>x.id===p.tipo);
+    const opt=document.createElement('option');
+    opt.value=p.id;
+    opt.textContent=`${pt?.icon||''} ${p.dueno||'Sin nombre'} — ${p.colonia||p.lugar||'Sin ubicación'}`;
+    sel.appendChild(opt);
+  });
+  document.getElementById('vis-fecha').value=today();
+}
+
+function saveVisita(){
+  const nombre=document.getElementById('vis-nombre').value.trim();
+  if(!nombre){showToast('Escribe el nombre del interesado',true);return;}
+  const rec={
+    id:uid(),createdAt:new Date().toISOString(),
+    nombre,
+    telefono:document.getElementById('vis-tel').value,
+    propId:document.getElementById('vis-prop').value,
+    fecha:document.getElementById('vis-fecha').value,
+    hora:document.getElementById('vis-hora').value,
+    notas:document.getElementById('vis-notas').value,
+  };
+  visitas=[rec,...visitas];
+  DB.set('inmo_v',visitas);
+  renderVisitas();updateCounts();
+  showToast('📅 Visita agendada');
+  ['vis-nombre','vis-tel','vis-hora','vis-notas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  showScreen('screen-main');
+  switchTab('visitas');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN TRANSITION HOOKS
+// ═══════════════════════════════════════════════════════════════
+const _origShow=showScreen;
+window.showScreen=function(id){
+  _origShow(id);
+  if(id==='screen-demanda-form') initDemandaForm();
+  if(id==='screen-visita-form') populateVisitaSelect();
+};
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+renderProps();
+renderDemanda();
+renderVisitas();
+updateCounts();
+</script>
+</body>
+</html>
