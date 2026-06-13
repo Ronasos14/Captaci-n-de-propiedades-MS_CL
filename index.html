@@ -58,10 +58,14 @@ a{color:var(--blu);}
 }
 .tab-btn.active{color:var(--blu);border-bottom-color:var(--blu);}
 .tab-count{
-  background:var(--s3);border-radius:10px;
-  padding:1px 7px;font-size:11px;color:var(--sub);
+  min-width:22px;height:18px;display:inline-flex;align-items:center;justify-content:center;
+  background:transparent;border:1px solid var(--ln2);border-radius:9px;
+  padding:0 6px;font-size:10px;color:var(--sub);line-height:1;
 }
-.tab-btn.active .tab-count{background:var(--bla);color:var(--blu);}
+.tab-btn.active .tab-count{background:#191c22;color:#fff;border-color:#3b414c;}
+.ui-icon{width:18px;height:18px;display:inline-block;flex:0 0 auto;color:currentColor;}
+.ui-icon svg{width:100%;height:100%;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.brand-icon{width:27px;height:27px;color:#f0f1f3;margin-right:8px;}
 
 /* ── STEP BAR ── */
 .step-bar{
@@ -240,9 +244,19 @@ input[readonly]{opacity:.55;}
 .prop-price .label{font-size:10px;color:var(--dim);}
 
 /* ── SEARCH ── */
-.search-wrap{position:relative;margin-bottom:12px;}
-.search-wrap input{padding-left:34px;}
-.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);pointer-events:none;}
+.search-wrap{position:relative;margin-bottom:12px;display:flex;align-items:center;}
+.search-wrap input{padding-left:17px;padding-right:46px;}
+.filter-toggle{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  width:30px;height:30px;border:0;border-radius:50%;color:#b9bdc5;background:#171a20;
+  display:flex;align-items:center;justify-content:center;z-index:3;
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.05),3px 3px 8px #050608;
+}
+.filter-toggle svg{width:15px;height:15px;transition:transform .2s;}
+.filter-toggle.open svg{transform:rotate(180deg);}
+.filter-panel{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .24s ease,opacity .2s ease;}
+.filter-panel.open{grid-template-rows:1fr;opacity:1;}
+.filter-panel-inner{min-height:0;overflow:hidden;}
 
 /* ── FILE DROP ── */
 .file-drop{
@@ -279,9 +293,20 @@ input[readonly]{opacity:.55;}
   padding:18px 12px;cursor:pointer;text-align:center;transition:all .15s;
 }
 .type-card.sel{background:var(--bla);border-color:var(--blu);}
-.type-card .t-icon{font-size:34px;margin-bottom:8px;}
+.type-card .t-icon{
+  width:68px;height:68px;margin:0 auto 13px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:#e9ebef;
+  background:linear-gradient(145deg,#1b1f26,#0d0f13);
+  border:1px solid #303641;
+  box-shadow:-6px -6px 13px rgba(43,48,58,.5),8px 8px 17px rgba(0,0,0,.62),inset 1px 1px 0 rgba(255,255,255,.07);
+}
+.type-card .t-icon svg{width:38px;height:38px;display:block;overflow:visible;}
+.type-card.sel .t-icon{
+  color:#111318;background:linear-gradient(145deg,#fff,#cfd3da);border-color:#fff;
+  box-shadow:-5px -5px 12px rgba(255,255,255,.1),8px 8px 18px rgba(0,0,0,.65);
+}
 .type-card .t-name{font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px;}
-.type-card.sel .t-name{color:#9aa8ff;}
+.type-card.sel .t-name{color:#fff;}
 .type-card .t-sub{font-size:11px;color:var(--sub);line-height:1.4;}
 
 /* ── DETAIL ROWS ── */
@@ -328,6 +353,106 @@ input[readonly]{opacity:.55;}
 .section-note{color:var(--dim);font-size:12px;margin:0 0 10px;}
 .btn-whatsapp{background:#1fa855;color:#fff;}
 @media(max-width:480px){.filter-grid{grid-template-columns:1fr;}}
+
+/* ── DARK NEUMORPHIC PREMIUM THEME ── */
+:root{
+  --bg:#090a0c;--s1:#111318;--s2:#15181e;--s3:#1a1d24;
+  --ln:#252932;--ln2:#353a45;--dim:#747983;--sub:#a7abb3;
+  --txt:#e8e9eb;--wht:#fff;--blu:#f4f4f5;--bla:#1c2027;--blg:#292e37;
+  --gld:#d8d9dc;--gla:#1b1e24;--grn:#a8d8b7;--red:#e78e8e;--amb:#d8bd88;
+  --r:14px;--r2:19px;--r3:24px;
+}
+html,body{
+  background:linear-gradient(145deg,#07080a 0%,#0c0e12 48%,#08090b 100%);
+  background-attachment:fixed;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle at 20% 0%,rgba(106,118,139,.1),transparent 32rem);
+}
+.topbar,.nav-tabs,.step-bar,.nav-bottom{
+  background:#0d0f13;border-color:#20242b;
+  box-shadow:0 12px 24px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.035);
+}
+.topbar{height:62px;padding-inline:20px;}
+.topbar-title{font-weight:650;letter-spacing:-.3px;}
+.topbar-title em{color:#fff;}
+.topbar-badge,.tab-count{
+  background:#15181e;border:1px solid #262a32;color:#c5c5c9;
+  box-shadow:inset 2px 2px 5px #08090b,inset -2px -2px 5px #20242c;
+}
+.tab-count{
+  background:transparent;border-color:#343a45;color:#9da2ab;
+  box-shadow:none;text-shadow:none;
+}
+.tab-btn,.step-btn{letter-spacing:.1px;transition:color .2s,background .2s,border-color .2s;}
+.tab-btn.active,.step-btn.active{color:#fff;border-bottom-color:#fff;}
+.tab-btn.active .tab-count{background:#f2f2f3;color:#090909;}
+.step-btn.done{color:#b9ddc4;}
+.page{max-width:760px;padding-top:24px;}
+.card,.fold,.prop-card,.stat-card,.type-card,.empty{
+  position:relative;overflow:hidden;
+  background:linear-gradient(145deg,#16191f,#0e1014);
+  border:1px solid #242831;
+  box-shadow:
+    -9px -9px 20px rgba(35,39,47,.42),
+    11px 11px 24px rgba(0,0,0,.58),
+    inset 1px 1px 0 rgba(255,255,255,.055),
+    inset -1px -1px 0 rgba(0,0,0,.72);
+}
+.card::before,.fold::before,.prop-card::before,.stat-card::before,.type-card::before{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),inset 1px 0 0 rgba(255,255,255,.025);
+}
+.card{padding:20px 18px;margin-bottom:15px;}
+.card-head{color:#b7b7bc;font-size:10px;letter-spacing:1.6px;}
+.card-head::after{background:linear-gradient(90deg,#343943,transparent);}
+.fold{border-radius:20px;margin-bottom:14px;}
+.fold-head{padding:17px 18px;color:#f2f2f3;}
+.prop-card{border-radius:21px;padding:17px;margin-bottom:12px;}
+.prop-card:hover,.type-card:hover{border-color:#3b414d;transform:translateY(-1px);}
+.prop-name,.amount,.stat-val{color:#fff;letter-spacing:-.2px;}
+.field label{color:#b9b9be;font-size:11px;letter-spacing:.15px;}
+input[type=text],input[type=number],input[type=tel],input[type=date],input[type=time],input[type=email],textarea,select{
+  background:#101217;border:1px solid #242832;color:#f4f4f5;
+  border-radius:13px;padding:11px 13px;
+  box-shadow:inset 4px 4px 8px #07080a,inset -3px -3px 7px #1c2027;
+}
+input:focus,textarea:focus,select:focus{border-color:#535a67;box-shadow:inset 4px 4px 8px #07080a,inset -3px -3px 7px #1c2027,0 0 0 3px rgba(255,255,255,.045);}
+input::placeholder,textarea::placeholder{color:#696970;}
+select option{background:#151517;color:#f4f4f5;}
+.btn{border-radius:14px;font-weight:650;letter-spacing:.1px;transition:transform .15s,box-shadow .15s,background .15s;}
+.btn:active{transform:scale(.985);}
+.btn-primary,.btn-gold{
+  background:linear-gradient(145deg,#f8f8f9,#cfd1d5);color:#07080a;border:1px solid #fff;
+  box-shadow:-4px -4px 10px rgba(255,255,255,.13),7px 7px 15px rgba(0,0,0,.5);
+}
+.btn-ghost,.btn-sm{
+  background:linear-gradient(145deg,#171a20,#0d0f13);color:#eee;border:1px solid #262b34;
+  box-shadow:-4px -4px 9px rgba(38,42,51,.38),5px 5px 11px rgba(0,0,0,.48);
+}
+.chip{background:#12151a;border-color:#272c35;color:#aaaab0;border-radius:999px;box-shadow:inset 2px 2px 5px #08090b,inset -2px -2px 5px #1c2027;}
+.chip.on{background:#f0f0f2;border-color:#fff;color:#080809;box-shadow:-3px -3px 8px rgba(255,255,255,.08),5px 5px 12px rgba(0,0,0,.5);}
+.status-pill{background:#12151a;border-color:#272c35;color:#aaaab0;box-shadow:inset 2px 2px 5px #08090b,inset -2px -2px 5px #1c2027;}
+.status-pill.on{background:#f2f2f3;border-color:#fff;color:#080809;}
+.bdg{background:#171a20;border-color:#292e37;color:#d5d5d8;}
+.btn-whatsapp,.mini-action.whatsapp{
+  background:linear-gradient(145deg,#cce7d5,#92c7a3);color:#071109;border:1px solid #dff2e5;
+  box-shadow:-3px -3px 8px rgba(255,255,255,.07),5px 5px 12px rgba(0,0,0,.46);
+}
+.client-contact{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:10px;color:var(--sub);font-size:12px;}
+.mini-action{display:inline-flex;align-items:center;justify-content:center;padding:7px 11px;border-radius:11px;font-size:11px;font-weight:700;text-decoration:none;}
+.private-note{background:#121419;border-left-color:var(--amb);padding:10px 12px;border-radius:0 10px 10px 0;box-shadow:inset 3px 3px 7px #08090b;}
+.topbar-title,.tab-btn,.card-head,.type-icon,.stat-icon,.e-icon{font-family:Arial,'Segoe UI Symbol',sans-serif;}
+.type-icon,.stat-icon,.e-icon{filter:grayscale(1);color:#e8e9eb;text-shadow:0 1px 0 rgba(255,255,255,.12),0 5px 12px #000;}
+.sw-icon{filter:grayscale(1);font-family:Arial,'Segoe UI Symbol',sans-serif;}
+.nav-bottom{padding-bottom:max(13px,env(safe-area-inset-bottom));}
+@media(max-width:480px){
+  .page{padding-inline:12px;padding-top:16px}.card{padding:17px 14px}.topbar{padding-inline:14px}
+  .prop-card{align-items:flex-start}.prop-price{max-width:42%}
+  .topbar-title{font-size:16px}.brand-icon{width:25px;height:25px;margin-right:6px}
+  .nav-tabs{padding-inline:6px}.tab-btn{padding-inline:10px;gap:5px}
+}
 </style>
 </head>
 <body>
@@ -342,15 +467,15 @@ input[readonly]{opacity:.55;}
 ════════════════════════════════════════ -->
 <div id="screen-main" class="screen active">
   <div class="topbar">
-    <div class="topbar-title">🏢 <em>Gestión</em> Inmobiliaria</div>
+    <div class="topbar-title" style="display:flex;align-items:center;"><span class="ui-icon brand-icon"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M3 19 12 11l6 5 7-7 8 10"/><path d="M6 17v14h24V17M14 31v-9h8v9"/><path d="M25 9V5h4v8"/></svg></span><em>Gestión</em>&nbsp;Inmobiliaria</div>
     <button id="sync-badge" onclick="configureCloud()" style="background:var(--s3);border:1px solid var(--ln);border-radius:20px;padding:3px 10px;font-size:12px;color:var(--amb);">● LOCAL</button>
   </div>
 
   <div class="nav-tabs">
-    <button class="tab-btn active" data-tab="props" onclick="switchTab('props')">🏠 Propiedades <span class="tab-count" id="count-props">0</span></button>
-    <button class="tab-btn" data-tab="demanda" onclick="switchTab('demanda')">🔍 Demanda <span class="tab-count" id="count-demanda">0</span></button>
-    <button class="tab-btn" data-tab="visitas" onclick="switchTab('visitas')">📅 Visitas <span class="tab-count" id="count-visitas">0</span></button>
-    <button class="tab-btn" data-tab="crm" onclick="switchTab('crm')">📊 CRM</button>
+    <button class="tab-btn active" data-tab="props" onclick="switchTab('props')"><span class="ui-icon"><svg viewBox="0 0 24 24"><path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg></span>Propiedades <span class="tab-count" id="count-props">0</span></button>
+    <button class="tab-btn" data-tab="demanda" onclick="switchTab('demanda')"><span class="ui-icon"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5"/></svg></span>Demanda <span class="tab-count" id="count-demanda">0</span></button>
+    <button class="tab-btn" data-tab="visitas" onclick="switchTab('visitas')"><span class="ui-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v5l3 2M8 3v3m8-3v3"/></svg></span>Visitas <span class="tab-count" id="count-visitas">0</span></button>
+    <button class="tab-btn" data-tab="crm" onclick="switchTab('crm')"><span class="ui-icon"><svg viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg></span>CRM</button>
   </div>
 
   <!-- TAB: PROPIEDADES -->
@@ -358,20 +483,24 @@ input[readonly]{opacity:.55;}
     <div class="eye">Inventario activo</div>
     <div class="big-title">Propiedades captadas</div>
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="search-props" placeholder="Buscar dueño, colonia, tipo..." oninput="renderProps()">
+      <input type="text" id="search-props" placeholder="Buscar dueño, colonia, tipo..." onfocus="openPropFilters()" oninput="renderProps()">
+      <button type="button" class="filter-toggle" id="filter-toggle" onclick="togglePropFilters(event)" aria-label="Mostrar u ocultar filtros" aria-expanded="false"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m5 8 5 5 5-5"/></svg></button>
     </div>
-    <div class="filter-grid">
-      <select id="filter-asesor" onchange="renderProps()"><option value="">Todos los asesores</option></select>
-      <select id="filter-estado" onchange="renderProps()"><option value="">Todos los estados</option></select>
-      <select id="filter-tipo" onchange="renderProps()"><option value="">Todos los tipos</option></select>
-      <input type="text" id="filter-zona" placeholder="Zona / colonia" oninput="renderProps()">
-      <input type="number" id="filter-precio-min" placeholder="Precio mínimo" oninput="renderProps()">
-      <input type="number" id="filter-precio-max" placeholder="Precio máximo" oninput="renderProps()">
-    </div>
-    <div class="filter-actions">
-      <button class="btn btn-sm" onclick="clearPropFilters()">Limpiar filtros</button>
-      <button class="btn btn-sm" onclick="toggleRetired()" id="btn-retired">Ver retiradas</button>
+    <div class="filter-panel" id="prop-filter-panel">
+      <div class="filter-panel-inner">
+        <div class="filter-grid">
+          <select id="filter-asesor" onchange="renderProps()"><option value="">Todos los asesores</option></select>
+          <select id="filter-estado" onchange="renderProps()"><option value="">Todos los estados</option></select>
+          <select id="filter-tipo" onchange="renderProps()"><option value="">Todos los tipos</option></select>
+          <input type="text" id="filter-zona" placeholder="Zona / colonia" oninput="renderProps()">
+          <input type="number" id="filter-precio-min" placeholder="Precio mínimo" oninput="renderProps()">
+          <input type="number" id="filter-precio-max" placeholder="Precio máximo" oninput="renderProps()">
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-sm" onclick="clearPropFilters()">Limpiar filtros</button>
+          <button class="btn btn-sm" onclick="toggleRetired()" id="btn-retired">Ver retiradas</button>
+        </div>
+      </div>
     </div>
     <button class="btn btn-primary btn-full" onclick="goTypeSelect()" style="margin-bottom:14px;">+ Nueva captación</button>
     <div id="list-props"></div>
@@ -382,7 +511,6 @@ input[readonly]{opacity:.55;}
     <div class="eye">Clientes buscando</div>
     <div class="big-title">Demanda activa</div>
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
       <input type="text" id="search-demanda" placeholder="Buscar nombre o zona..." oninput="renderDemanda()">
     </div>
     <button class="btn btn-primary btn-full" onclick="showScreen('screen-demanda-form')" style="margin-bottom:14px;">+ Registrar búsqueda de cliente</button>
@@ -403,7 +531,7 @@ input[readonly]{opacity:.55;}
     <div class="big-title">CRM</div>
     <div id="crm-stats"></div>
     <div class="card" style="text-align:center;color:var(--dim);font-size:13px;padding:22px 16px;margin-top:4px;">
-      📊 Historial por cliente y seguimiento — próximamente
+      ▦ Historial por cliente y seguimiento — próximamente
     </div>
   </div>
 </div>
@@ -464,14 +592,14 @@ input[readonly]{opacity:.55;}
 <div id="screen-demanda-form" class="screen">
   <div class="topbar">
     <button class="btn btn-sm" onclick="showScreen('screen-main')">← Cancelar</button>
-    <div class="topbar-title">🔍 <em>Demanda</em></div>
+    <div class="topbar-title">⌕ <em>Demanda</em></div>
   </div>
   <div class="page">
     <div class="eye">Nuevo cliente buscador</div>
     <div class="big-title">¿Qué está buscando?</div>
 
     <div class="card">
-      <div class="card-head">👤 Datos del cliente</div>
+      <div class="card-head">◎ Datos del cliente</div>
       <div class="field"><label>Nombre completo <span class="req">*</span></label><input type="text" id="dem-nombre" placeholder="Nombre del cliente"></div>
       <div class="g2 mt">
         <div class="field"><label>Teléfono</label><input type="tel" id="dem-tel" placeholder="55 0000 0000"></div>
@@ -480,7 +608,7 @@ input[readonly]{opacity:.55;}
     </div>
 
     <div class="card">
-      <div class="card-head">🔍 Qué busca</div>
+      <div class="card-head">⌕ Qué busca</div>
       <label style="font-size:12px;font-weight:500;color:var(--sub);display:block;margin-bottom:8px;">Operación</label>
       <div class="chips" id="dem-operacion"></div>
       <label style="font-size:12px;font-weight:500;color:var(--sub);display:block;margin:14px 0 8px;">Tipo de propiedad</label>
@@ -488,7 +616,7 @@ input[readonly]{opacity:.55;}
     </div>
 
     <div class="card">
-      <div class="card-head">💰 Presupuesto</div>
+      <div class="card-head">$ Presupuesto</div>
       <div class="g2">
         <div class="field"><label>Mínimo</label><div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="dem-min" placeholder="0"></div></div>
         <div class="field"><label>Máximo</label><div class="price-wrap"><span class="price-prefix">$</span><input type="number" id="dem-max" placeholder="0"></div></div>
@@ -496,7 +624,7 @@ input[readonly]{opacity:.55;}
     </div>
 
     <div class="card">
-      <div class="card-head">📍 Zonas y medidas</div>
+      <div class="card-head">⌖ Zonas y medidas</div>
       <div class="field"><label>Zonas preferidas</label><input type="text" id="dem-zonas" placeholder="Ej. Centro, Juriquilla..."></div>
       <div class="g2 mt">
         <div class="field"><label>M² terreno mín.</label><input type="number" id="dem-m2ter" placeholder="m²"></div>
@@ -513,7 +641,7 @@ input[readonly]{opacity:.55;}
     </div>
 
     <div class="card">
-      <div class="card-head">✅ Requisitos</div>
+      <div class="card-head">✓ Requisitos</div>
       <div class="chips" id="dem-req"></div>
     </div>
 
@@ -539,22 +667,22 @@ input[readonly]{opacity:.55;}
 <div id="screen-visita-form" class="screen">
   <div class="topbar">
     <button class="btn btn-sm" onclick="showScreen('screen-main')">← Cancelar</button>
-    <div class="topbar-title">📅 <em>Visita</em></div>
+    <div class="topbar-title">◷ <em>Visita</em></div>
   </div>
   <div class="page">
     <div class="eye">Agendar</div>
     <div class="big-title">Solicitud de visita</div>
     <div class="card">
-      <div class="card-head">👤 Interesado</div>
+      <div class="card-head">◎ Interesado</div>
       <div class="field"><label>Nombre</label><input type="text" id="vis-nombre" placeholder="Nombre del cliente"></div>
       <div class="field mt"><label>Teléfono</label><input type="tel" id="vis-tel" placeholder="55 0000 0000"></div>
     </div>
     <div class="card">
-      <div class="card-head">🏠 Propiedad a visitar</div>
+      <div class="card-head">⌂ Propiedad a visitar</div>
       <div class="field"><label>Seleccionar propiedad</label><select id="vis-prop"><option value="">Seleccionar...</option></select></div>
     </div>
     <div class="card">
-      <div class="card-head">📅 Fecha y hora</div>
+      <div class="card-head">◷ Fecha y hora</div>
       <div class="g2">
         <div class="field"><label>Fecha</label><input type="date" id="vis-fecha"></div>
         <div class="field"><label>Hora</label><input type="time" id="vis-hora"></div>
@@ -567,7 +695,7 @@ input[readonly]{opacity:.55;}
   </div>
   <div class="nav-bottom">
     <button class="btn btn-ghost" onclick="showScreen('screen-main')">Cancelar</button>
-    <button class="btn btn-primary btn-full" onclick="saveVisita()">📅 Agendar visita</button>
+    <button class="btn btn-primary btn-full" onclick="saveVisita()">◷ Agendar visita</button>
   </div>
 </div>
 
@@ -730,6 +858,11 @@ const uid   = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const today = ()=>new Date().toISOString().slice(0,10);
 const fmtMXN= v=>v?'$'+Number(v).toLocaleString('es-MX'):'—';
 const esc   = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const whatsappPhone=value=>{
+  let phone=String(value||'').replace(/\D/g,'');
+  if(phone.length===10) phone='52'+phone;
+  return phone;
+};
 
 function showToast(msg,err=false){
   const t=document.getElementById('toast');
@@ -752,6 +885,21 @@ function switchTab(tab){
   document.querySelectorAll('#screen-main .page').forEach(p=>p.classList.add('hidden'));
   document.getElementById('tab-'+tab).classList.remove('hidden');
   if(tab==='crm') renderCRM();
+}
+function setPropFilters(open){
+  const panel=document.getElementById('prop-filter-panel');
+  const button=document.getElementById('filter-toggle');
+  if(!panel||!button)return;
+  panel.classList.toggle('open',open);
+  button.classList.toggle('open',open);
+  button.setAttribute('aria-expanded',String(open));
+}
+function openPropFilters(){setPropFilters(true);}
+function togglePropFilters(event){
+  event?.preventDefault();
+  event?.stopPropagation();
+  const panel=document.getElementById('prop-filter-panel');
+  setPropFilters(!panel?.classList.contains('open'));
 }
 
 // ── COUNTER ───────────────────────────────────────────────────
@@ -829,11 +977,11 @@ function toggleFold(id){
 // DATA
 // ═══════════════════════════════════════════════════════════════
 const PROP_TYPES=[
-  {id:'casa',  icon:'🏠',name:'Casa',           sub:'Habitación, esquina, privada, remodelar'},
-  {id:'depto', icon:'🏢',name:'Departamento',   sub:'Planta baja, alta, penthouse, loft'},
-  {id:'terre', icon:'🌿',name:'Terreno',         sub:'Habitacional, comercial, irregular'},
-  {id:'local', icon:'🏪',name:'Local comercial',sub:'En plaza, calle, esquinero'},
-  {id:'bodega',icon:'🏭',name:'Bodega / Nave',  sub:'Con oficinas, nave sola, maniobras'},
+  {id:'casa',  icon:'⌂',name:'Casa',           sub:'Habitación, esquina, privada, remodelar'},
+  {id:'depto', icon:'▤',name:'Departamento',   sub:'Planta baja, alta, penthouse, loft'},
+  {id:'terre', icon:'◇',name:'Terreno',         sub:'Habitacional, comercial, irregular'},
+  {id:'local', icon:'▣',name:'Local comercial',sub:'En plaza, calle, esquinero'},
+  {id:'bodega',icon:'▥',name:'Bodega / Nave',  sub:'Con oficinas, nave sola, maniobras'},
   {id:'rancho',icon:'🐄',name:'Rancho / Huerta',sub:'Agropecuario, recreativo'},
   {id:'ofic',  icon:'💼',name:'Oficina',         sub:'Piso completo, cubículo, coworking'},
   {id:'otro',  icon:'📦',name:'Otro',            sub:'Especificar en notas'},
@@ -850,7 +998,6 @@ const SUBTYPES={
 };
 const HAS_ROOMS=['casa','depto'];
 const ASESORES=['Ronny','Denny'];
-const DOCS_L   =['Escrituras','Ejidal','Libre de gravamen','Avalúo reciente','Plano arquitectónico','Plano catastral','Predial al corriente','Agua al corriente','Régimen de condominio','Carta de posesión','Sin regularizar','En trámite'];
 const EQUIP_L  =['Tinaco','Cisterna','Aljibe','Paneles solares','Calentador solar','Tanque estacionario','Cerca eléctrica','Cámaras de seguridad','Alarma','Portón eléctrico','Elevador','Generador'];
 const SERV_L   =['Agua municipal','Luz CFE','Gas natural','Drenaje municipal','Internet / Fibra','Teléfono','Alumbrado público','Pavimento','Otros'];
 const EXTRAS_L =['Terraza','Roof garden','Azotea','Asador','Bodega interna','Cuarto servicio','Área lavado','Estudio / Oficina','Sala juegos','Cine en casa','Gym','Bar','Jacuzzi','Palapa'];
@@ -864,10 +1011,26 @@ const URG_L    =['Urgente — menos de 1 mes','Normal — 1 a 3 meses','Sin pris
 const CREDIT_L =['Crédito bancario','Infonavit','Cofinavit','Fovissste','Fovissste para Todos','Unamos Créditos','Crédito conyugal','Otro'];
 const PERMUTA_L=['Casa','Terreno','Departamento','Vehículo','Local','Otro'];
 const STATUS_L =['Captación en proceso','Lista para publicar','Publicada','En negociación','Apartada','Vendida','Pausada','Retirada'];
-const LEGAL_L  =['Propiedad privada','Ejidal','Comunal','Posesión','Cesión de derechos'];
-const LEGAL_STATUS_L=['Libre de gravamen','Gravado','Hipoteca','En regularización','En revisión'];
+const LEGAL_SUPPORT_L=['Escrituras','Carta de posesión','Cesión de derechos','Contrato privado'];
+const LEGAL_L  =['Privada','Ejidal','Comunal'];
+const LEGAL_STATUS_L=['Libre de gravamen','Gravada','Hipotecada','En sucesión'];
 const LAND_ACCESS_L=['Pavimentado','Terracería','Ambos'];
 const LAND_LOCATION_L=['En esquina','Media cuadra','Avenida principal','Calle secundaria','Privada','Frente a área verde','Frente a carretera','Otro'];
+
+const PROPERTY_ICON_DRAWINGS={
+  casa:`<path d="M5 22 16 12l11 10"/><path d="M8 20v12h16V20"/><path d="M13 32v-8h6v8"/><path d="M23 15v-5h4v9"/>`,
+  depto:`<rect x="8" y="5" width="20" height="28" rx="2"/><path d="M12 10h4m4 0h4m-12 6h4m4 0h4m-12 6h4m4 0h4M17 33v-6h4v6"/>`,
+  terre:`<path d="M5 27 13 10l7 12 5-8 6 13"/><path d="M4 31h28M9 27h18"/><path d="M13 10v-4m12 8v-4"/>`,
+  local:`<path d="M6 13h24l-2-6H8z"/><path d="M7 13v19h22V13"/><path d="M5 13c0 3 4 4 6 1 2 3 6 3 8 0 2 3 6 2 7-1 1 2 4 2 5 0"/><path d="M12 32v-9h12v9"/>`,
+  bodega:`<path d="M4 16 18 7l14 9v16H4z"/><path d="M9 32V19h18v13M12 23h12m-12 4h12"/><path d="M7 14h22"/>`,
+  rancho:`<path d="M5 19 18 9l13 10"/><path d="M8 17v15h20V17"/><path d="M14 32v-9h8v9"/><path d="M3 32h30M5 12V7m0 0 4 3M5 7 2 10"/>`,
+  ofic:`<rect x="7" y="7" width="22" height="26" rx="2"/><path d="M11 12h4m6 0h4m-14 6h4m6 0h4m-14 6h4m6 0h4M16 33v-5h4v5"/><path d="M4 33h28"/>`,
+  otro:`<path d="M6 12 18 6l12 6-12 6z"/><path d="M6 12v14l12 7 12-7V12M18 18v15"/><path d="M12 9l12 6"/>`
+};
+function propertyTypeIcon(id){
+  const drawing=PROPERTY_ICON_DRAWINGS[id]||PROPERTY_ICON_DRAWINGS.otro;
+  return `<svg viewBox="0 0 36 38" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${drawing}</svg>`;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // TYPE SELECTOR
@@ -881,7 +1044,7 @@ function goTypeSelect(){
   PROP_TYPES.forEach(t=>{
     const div=document.createElement('div');
     div.className='type-card';
-    div.innerHTML=`<div class="t-icon">${t.icon}</div><div class="t-name">${t.name}</div><div class="t-sub">${t.sub}</div>`;
+    div.innerHTML=`<div class="t-icon">${propertyTypeIcon(t.id)}</div><div class="t-name">${t.name}</div><div class="t-sub">${t.sub}</div>`;
     div.onclick=()=>{
       document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('sel'));
       div.classList.add('sel');
@@ -916,8 +1079,8 @@ function initCaptForm(type){
   const pt=PROP_TYPES.find(x=>x.id===type);
   const hasRooms=HAS_ROOMS.includes(type);
   captSteps=hasRooms
-    ?['General','Ubicación','Medidas','Espacios','Servicios','Precios','Seguimiento','Guardar']
-    :['General','Ubicación','Medidas','Servicios','Precios','Seguimiento','Guardar'];
+    ?['General','Ubicación','Medidas','Espacios','Servicios','Precios','Guardar']
+    :['General','Ubicación','Medidas','Servicios','Precios','Guardar'];
 
   document.getElementById('capt-title').innerHTML=`${pt.icon} <em style="color:var(--gld);font-style:normal;">${pt.name}</em>`;
   renderStepBar();
@@ -955,24 +1118,11 @@ function renderCaptStep(){
   if(s==='Espacios')   page.innerHTML=buildEspacios();
   if(s==='Servicios')  page.innerHTML=buildServicios();
   if(s==='Precios')    page.innerHTML=buildPrecios();
-  if(s==='Seguimiento') page.innerHTML=buildSeguimiento();
   if(s==='Guardar')    page.innerHTML=buildGuardar();
-  if(s!=='Seguimiento')page.insertAdjacentHTML('afterbegin',buildStatusHeader());
 
   // re-init chips/switches/counters after innerHTML
   afterRender(s);
   window.scrollTo(0,0);
-}
-
-function buildStatusHeader(){
-  return `<div class="card"><div class="card-head">📍 Estado de captación</div>
-    <div class="status-bar">${STATUS_L.map(x=>`<button type="button" class="status-pill${(F.estado||'Captación en proceso')===x?' on':''}" onclick="quickStatus('${x.replace(/'/g,"\\'")}',this)">${x}</button>`).join('')}</div>
-  </div>`;
-}
-function quickStatus(status,button){
-  F.estado=status;
-  button.parentElement.querySelectorAll('.status-pill').forEach(x=>x.classList.remove('on'));
-  button.classList.add('on');
 }
 
 // ── SAVE STATE helpers (persist form values across steps) ─────
@@ -1015,7 +1165,7 @@ function saveCurrentStep(){
   if(s==='Servicios'){
     F.servicios=getChips('f-servicios');F.equipamiento=getChips('f-equip');
     F.tinacoL=val('f-tinacol');F.cistL=val('f-cistl');
-    F.docs=getChips('f-docs');F.llaves=val('f-llaves');
+    F.respaldoLegal=getChips('f-respaldo');F.llaves=val('f-llaves');
     F.regimenPropiedad=getChips('f-regimen');F.estadoJuridico=getChips('f-estado-juridico');
     F.ocupacion=val('f-ocupacion');F.horariosVisita=val('f-horarios-visita');
     F.avisoPrevio=val('f-aviso-previo');F.tiempoAviso=val('f-tiempo-aviso');
@@ -1047,9 +1197,7 @@ function saveCurrentStep(){
     F.rentaHabilitada=document.getElementById('fold-renta')?.classList.contains('open')||false;
     F.permutaHabilitada=document.getElementById('fold-permuta')?.classList.contains('open')||false;
   }
-  if(s==='Seguimiento'){
-    F.estado=val('f-estado')||'Captación en proceso';
-  }
+  if(s==='Guardar')F.estado=val('f-estado')||F.estado||'Captación en proceso';
 }
 
 function captPrevSave(){saveCurrentStep();captPrev();}
@@ -1081,7 +1229,7 @@ function buildGeneral(){
     </div>
   </div>
   <div class="card">
-    <div class="card-head">👤 Propietario</div>
+    <div class="card-head">◎ Propietario</div>
     <div class="field"><label>Nombre completo <span class="req">*</span></label>
       <input type="text" id="f-dueno" placeholder="Juan García López" value="${esc(F.dueno||'')}">
     </div>
@@ -1107,7 +1255,7 @@ function buildGeneral(){
 function buildUbicacion(){
   return `
   <div class="card">
-    <div class="card-head">📍 Dirección</div>
+    <div class="card-head">⌖ Dirección</div>
     <div class="field"><label>Ciudad / Municipio</label>
       <div class="gps-row">
         <input type="text" id="f-lugar" placeholder="Ej. Querétaro" value="${esc(F.lugar||'')}">
@@ -1127,7 +1275,7 @@ function buildUbicacion(){
     </div>
   </div>
   <div class="card">
-    <div class="card-head">🗺 Google Maps</div>
+    <div class="card-head">⌘ Google Maps</div>
     <div class="field"><label>Pegar link de Google Maps</label>
       <input type="text" id="f-maps" placeholder="https://maps.google.com/..." value="${esc(F.mapsLink||'')}">
     </div>
@@ -1136,7 +1284,7 @@ function buildUbicacion(){
       <div class="field"><label>Longitud</label><input type="text" id="f-lng" readonly value="${esc(F.lng||'')}"></div>
     </div>
     ${F.lat&&F.lng?`<div style="margin-top:10px;font-size:13px;">
-      <a href="https://maps.google.com/?q=${F.lat},${F.lng}" target="_blank">🗺 Ver en Google Maps →</a>
+      <a href="https://maps.google.com/?q=${F.lat},${F.lng}" target="_blank">⌘ Ver en Google Maps →</a>
     </div>`:''}
   </div>`;
 }
@@ -1146,7 +1294,7 @@ function buildMedidas(){
   const isLand=captType==='terre';
   return `
   <div class="card">
-    <div class="card-head">📐 Linderos (metros lineales)</div>
+    <div class="card-head">⟷ Linderos (metros lineales)</div>
     <div class="g4">
       <div class="field"><label>⬆ Frente</label><input type="number" id="f-frente" placeholder="0.00" value="${esc(F.frente||'')}" oninput="calcM2()"></div>
       <div class="field"><label>⬇ Fondo</label><input type="number" id="f-fondo" placeholder="0.00" value="${esc(F.fondo||'')}" oninput="calcM2()"></div>
@@ -1204,23 +1352,23 @@ function calcM2(){
 function buildEspacios(){
   return `
   <div class="card">
-    <div class="card-head">🛏 Habitaciones y baños</div>
+    <div class="card-head">▱ Habitaciones y baños</div>
     ${buildCtr('c-habppal','Habitación principal',F.habPpal||1)}
     ${buildCtr('c-habsec','Habitaciones secundarias',F.habSec||2)}
     ${buildCtr('c-banosc','Baños completos',F.banosC||1)}
     ${buildCtr('c-banosm','Medios baños',F.banosM||1)}
   </div>
   <div class="card">
-    <div class="card-head">🛏 Hab. principal — detalles</div>
+    <div class="card-head">▱ Hab. principal — detalles</div>
     <div class="chips" id="f-habppal"></div>
   </div>
   <div class="card">
-    <div class="card-head">🛏 Hab. secundarias — detalles</div>
+    <div class="card-head">▱ Hab. secundarias — detalles</div>
     <div class="chips" id="f-habsec"></div>
   </div>
   <div class="card">
-    <div class="card-head">🏠 Áreas internas</div>
-    ${buildSw('cochera','🚗','Cochera')}
+    <div class="card-head">⌂ Áreas internas</div>
+    ${buildSw('cochera','▰','Cochera')}
     <div class="sw-extra${getSw('cochera')?' show':''}" id="swx-cochera">
       <div class="g2" style="margin-bottom:8px;">
         <div class="field"><label>Cajones</label><input type="number" id="f-cajones" placeholder="2" value="${esc(F.cocheraCajones||'')}"></div>
@@ -1228,7 +1376,7 @@ function buildEspacios(){
       </div>
       <div class="chips" id="f-cocheratipo"></div>
     </div>
-    ${buildSw('patio','🌿','Jardín / Patio')}
+    ${buildSw('patio','◇','Jardín / Patio')}
     <div class="sw-extra${getSw('patio')?' show':''}" id="swx-patio">
       <div class="chips" id="f-patioopc"></div>
     </div>
@@ -1242,13 +1390,13 @@ function buildEspacios(){
     </div>
     ${buildSw('comedor','🍽️','Comedor')}
     ${buildSw('lavado','🧺','Área de lavado')}
-    ${buildSw('alberca','🏊','Alberca')}
-    ${buildSw('cuartoserv','🏠','Cuarto de servicio')}
+    ${buildSw('alberca','≋','Alberca')}
+    ${buildSw('cuartoserv','⌂','Cuarto de servicio')}
     ${buildSw('bodegaint','📦','Bodega interna')}
     ${buildSw('terraza','🌇','Terraza / Roof')}
   </div>
   <div class="card">
-    <div class="card-head">✨ Especiales</div>
+    <div class="card-head">✦ Especiales</div>
     <div class="chips" id="f-extras"></div>
   </div>`;
 }
@@ -1277,7 +1425,7 @@ function buildServicios(){
   const housing=HAS_ROOMS.includes(captType);
   return `
   <div class="card">
-    <div class="card-head">⚡ Servicios disponibles</div>
+    <div class="card-head">ϟ Servicios disponibles</div>
     <div class="chips" id="f-servicios"></div>
   </div>
   <div class="card">
@@ -1287,14 +1435,12 @@ function buildServicios(){
     <div id="cisterna-field" class="field mt hidden"><label>Litros de la cisterna</label><input type="number" id="f-cistl" placeholder="Ej. 5000" value="${esc(F.cistL||'')}"></div>
   </div>
   <div class="card">
-    <div class="card-head">📄 Documentación</div>
-    <div class="chips" id="f-docs"></div>
-  </div>
-  <div class="card">
-    <div class="card-head">⚖ Situación legal</div>
-    <label style="font-size:12px;color:var(--sub);display:block;margin-bottom:8px;">Régimen de propiedad</label>
+    <div class="card-head">§ Situación legal</div>
+    <label style="font-size:12px;color:var(--sub);display:block;margin-bottom:8px;">Tipo de respaldo</label>
+    <div class="chips" id="f-respaldo"></div>
+    <label style="font-size:12px;color:var(--sub);display:block;margin:14px 0 8px;">Régimen</label>
     <div class="chips" id="f-regimen"></div>
-    <label style="font-size:12px;color:var(--sub);display:block;margin:14px 0 8px;">Estado jurídico</label>
+    <label style="font-size:12px;color:var(--sub);display:block;margin:14px 0 8px;">Condición legal</label>
     <div class="chips" id="f-estado-juridico"></div>
   </div>
   <div class="card">
@@ -1317,7 +1463,7 @@ function buildServicios(){
     </div>
   </div>
   ${housing?`<div class="card">
-    <div class="card-head">🏠 Detalles de la vivienda</div>
+    <div class="card-head">⌂ Detalles de la vivienda</div>
     <div class="private-note">Uso exclusivamente interno. Estos datos no aparecen en la versión pública.</div>
     <div class="field"><label>Estado de conservación</label><input id="f-conservacion" type="text" value="${esc(F.estadoConservacion||'')}"></div>
     <div class="field mt"><label>Remodelaciones realizadas</label><textarea id="f-remodelaciones">${esc(F.remodelaciones||'')}</textarea></div>
@@ -1336,7 +1482,7 @@ function buildServicios(){
 function buildPrecios(){
   return `
   <div class="card">
-    <div class="card-head">💰 Precios</div>
+    <div class="card-head">$ Precios</div>
     <div class="field"><label>Precio del propietario</label>
       <div class="price-wrap"><span class="price-prefix">$</span>
         <input type="number" id="f-preciosol" placeholder="0" value="${esc(F.precioSol||'')}" oninput="calcComision()">
@@ -1433,7 +1579,7 @@ function buildPrecios(){
     </div>
   </div>
   <div class="card">
-    <div class="card-head">📸 Fotos de la propiedad</div>
+    <div class="card-head">▧ Fotos de la propiedad</div>
     <div class="file-drop" onclick="document.getElementById('fotos-input').click()">
       <div class="icon">📷</div>
       <p>Toca para agregar fotos</p>
@@ -1450,16 +1596,6 @@ function buildPrecios(){
   </div>`;
 }
 
-function buildSeguimiento(){
-  return `<div class="card">
-    <div class="card-head">📍 Seguimiento de captación</div>
-    <p class="section-note">La propiedad seguirá guardada aunque cambie de estado.</p>
-    <div class="status-bar">${STATUS_L.map(x=>`<button type="button" class="status-pill${(F.estado||'Captación en proceso')===x?' on':''}" onclick="selectStatus('${x.replace(/'/g,"\\'")}',this)">${x}</button>`).join('')}</div>
-    <input type="hidden" id="f-estado" value="${esc(F.estado||'Captación en proceso')}">
-    <div class="private-note mt">Pausada permanece visible y atenuada. Retirada queda fuera del inventario activo y de las búsquedas normales.</div>
-  </div>`;
-}
-
 function buildGuardar(){
   const pt=PROP_TYPES.find(x=>x.id===captType);
   const hasRooms=HAS_ROOMS.includes(captType);
@@ -1470,7 +1606,7 @@ function buildGuardar(){
     ['M² Construcción',F.m2Const?F.m2Const+' m²':''],
     ['Precio solicitado',fmtMXN(F.precioSol)],
     ['Comisión',F.comisionPct?F.comisionPct+'%':''],
-    ['Contrato',F.contratoFirmado?'✅ Firmado':'⏳ Pendiente'],
+    ['Contrato',F.contratoFirmado?'✓ Firmado':'◷ Pendiente'],
     ['Publicar',F.publicar!==false?'Sí':'No — privado'],
     hasRooms?['Habitaciones',`${F.habPpal||1}P + ${F.habSec||2}S`]:null,
   ].filter(Boolean);
@@ -1478,7 +1614,13 @@ function buildGuardar(){
   const shareText=buildShareSummary(F,captType);
   return `
   <div class="card">
-    <div class="card-head">✅ Resumen de captación</div>
+    <div class="card-head">⌖ Estado de captación</div>
+    <div class="status-bar">${STATUS_L.map(x=>`<button type="button" class="status-pill${(F.estado||'Captación en proceso')===x?' on':''}" onclick="selectStatus('${x.replace(/'/g,"\\'")}',this)">${x}</button>`).join('')}</div>
+    <input type="hidden" id="f-estado" value="${esc(F.estado||'Captación en proceso')}">
+    <div class="private-note mt">Pausada permanece visible y atenuada. Retirada queda fuera del inventario activo.</div>
+  </div>
+  <div class="card">
+    <div class="card-head">✓ Resumen de captación</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
       ${rows.map(([k,v])=>`
         <div style="background:var(--s2);border:1px solid var(--ln);border-radius:8px;padding:9px 12px;">
@@ -1550,8 +1692,8 @@ function buildInternalSummary(p,type){
     line('Dirección exacta',[p.calle,p.numero,p.colonia,p.lugar,p.cp&&'CP '+p.cp].filter(Boolean).join(', ')),
     line('Referencias',p.referencias),line('Google Maps',p.mapsLink),
     line('Terreno',p.m2Sup&&p.m2Sup+' m²'),line('Construcción',p.m2Const&&p.m2Const+' m²'),
-    line('Documentación',(p.docs||[]).join(', ')),line('Régimen',(p.regimenPropiedad||[]).join(', ')),
-    line('Estado jurídico',(p.estadoJuridico||[]).join(', ')),line('Llaves y accesos',p.llaves),
+    line('Tipo de respaldo',(p.respaldoLegal||p.docs||[]).join(', ')),line('Régimen',(p.regimenPropiedad||[]).join(', ')),
+    line('Condición legal',(p.estadoJuridico||[]).join(', ')),line('Llaves y accesos',p.llaves),
     line('Ocupación',p.ocupacion),line('Horarios de visita',p.horariosVisita),
     line('Precio propietario',fmtMXN(p.precioSol)),line('Precio negociable',fmtMXN(p.precioNeg)),
     line('Precio de nosotros',fmtMXN(p.precioNuestro)),line('Comisión',p.comisionPct&&p.comisionPct+'%'),
@@ -1640,7 +1782,7 @@ function getGPS(){
         if(el('f-numero')&&!el('f-numero').value) el('f-numero').value=ad.house_number||'';
         if(el('f-maps')&&!el('f-maps').value) el('f-maps').value=`https://maps.google.com/?q=${lat},${lng}`;
       }).catch(()=>{});
-    showToast('📍 Ubicación capturada');
+    showToast('⌖ Ubicación capturada');
   },()=>showToast('No se pudo obtener ubicación',true));
 }
 
@@ -1661,7 +1803,7 @@ async function doAI(){
     });
     const j=await r.json();
     const txt=j.content?.[0]?.text||'No se pudo generar.';
-    if(res)res.innerHTML=`<div class="ai-box"><div class="ai-title">🏠 Análisis de potencial</div><p class="ai-text">${esc(txt)}</p></div>`;
+    if(res)res.innerHTML=`<div class="ai-box"><div class="ai-title">⌂ Análisis de potencial</div><p class="ai-text">${esc(txt)}</p></div>`;
     const ta=document.getElementById('f-potencial');
     if(ta&&!ta.value)ta.value=txt;
   }catch{
@@ -1709,7 +1851,7 @@ function afterRender(step){
   if(step==='Servicios'){
     initChips('f-servicios',SERV_L,true,F.servicios||[]);
     initChips('f-equip',EQUIP_L,true,F.equipamiento||[]);
-    initChips('f-docs',DOCS_L,true,F.docs||[]);
+    initChips('f-respaldo',LEGAL_SUPPORT_L,true,F.respaldoLegal||(F.docs||[]).filter(x=>LEGAL_SUPPORT_L.includes(x)));
     initChips('f-regimen',LEGAL_L,true,F.regimenPropiedad||[]);
     initChips('f-estado-juridico',LEGAL_STATUS_L,true,F.estadoJuridico||[]);
     toggleVisitFields();
@@ -1758,7 +1900,7 @@ function saveCaptacion(){
   renderProps();
   initPropFilters();
   updateCounts();
-  showToast(editingId?'✅ Captación actualizada':'✅ Captación guardada correctamente');
+  showToast(editingId?'✓ Captación actualizada':'✓ Captación guardada correctamente');
   // reset form state
   Object.keys(F).forEach(k=>delete F[k]);
   editingId=null;
@@ -1809,9 +1951,9 @@ function openDetail(id){
     ['Equipamiento',(p.equipamiento||[]).join(', ')],
     ['Tinaco litros',p.tinacoL?p.tinacoL+' L':''],
     ['Cisterna litros',p.cistL?p.cistL+' L':''],
-    ['Documentación',(p.docs||[]).join(', ')],
+    ['Tipo de respaldo',(p.respaldoLegal||p.docs||[]).join(', ')],
     ['Régimen de propiedad',(p.regimenPropiedad||[]).join(', ')],
-    ['Estado jurídico',(p.estadoJuridico||[]).join(', ')],
+    ['Condición legal',(p.estadoJuridico||[]).join(', ')],
     ['Llaves',p.llaves],
     ['Estado de ocupación',p.ocupacion],['Horarios de visita',p.horariosVisita],
     ['Aviso previo',p.avisoPrevio],['Tiempo mínimo de aviso',p.tiempoAviso],
@@ -1831,36 +1973,31 @@ function openDetail(id){
     ['Renta mensual',fmtMXN(p.rentaMensual)],['Observaciones de renta',p.rentaObservaciones],
     ['Bienes a cuenta',(p.permuta||[]).join(', ')],
     ['Vigencia',p.vigencia],['Firma contrato',p.firmaContrato],
-    ['Contrato firmado',p.contratoFirmado?'✅ Sí':'⏳ Pendiente'],
+    ['Contrato firmado',p.contratoFirmado?'✓ Sí':'◷ Pendiente'],
     ['Permiso publicar',p.publicar?'Sí':'No — privado'],
     ['Notas',p.notas],
   ].filter(([,v])=>v!==''&&v!==undefined&&v!==null);
 
   let html='';
 
-  html+=`<div class="card">
-    <div class="card-head">📍 Seguimiento</div>
-    <div class="status-bar">${STATUS_L.map(x=>`<button type="button" class="status-pill${(p.estado||'Captación en proceso')===x?' on':''}" onclick="updateDetailStatus('${x.replace(/'/g,"\\'")}')">${x}</button>`).join('')}</div>
-  </div>`;
   if(p.mapsLink){
-    html+=`<div style="margin-bottom:14px;"><a href="${esc(p.mapsLink)}" target="_blank">🗺 Ver en Google Maps →</a></div>`;
+    html+=`<div style="margin-bottom:14px;"><a href="${esc(p.mapsLink)}" target="_blank">⌘ Ver en Google Maps →</a></div>`;
   }
   if(p.telefono){
-    let phone=String(p.telefono).replace(/\D/g,'');
-    if(phone.length===10)phone='52'+phone;
+    const phone=whatsappPhone(p.telefono);
     html+=`<a class="btn btn-whatsapp btn-full" style="display:block;text-align:center;margin-bottom:14px;text-decoration:none;" href="https://wa.me/${phone}" target="_blank">WhatsApp al propietario</a>`;
   }
   if(p.fotos?.length){
-    html+=`<div class="card"><div class="card-head">📸 Fotos</div><div class="thumb-grid">${p.fotos.map(s=>`<img src="${s}" class="thumb" alt="">`).join('')}</div></div>`;
+    html+=`<div class="card"><div class="card-head">▧ Fotos</div><div class="thumb-grid">${p.fotos.map(s=>`<img src="${s}" class="thumb" alt="">`).join('')}</div></div>`;
   }
   html+=`<div class="card">
-    <div class="card-head">🔒 Resumen interno</div>
+    <div class="card-head">⊘ Resumen interno</div>
     <div class="private-note">Contiene información privada. No usar en publicaciones.</div>
     <textarea id="internal-summary" readonly rows="14">${esc(buildInternalSummary(p,p.tipo))}</textarea>
     <button class="btn btn-ghost btn-full mt" onclick="copyInternalSummary()">Copiar resumen interno</button>
   </div>`;
   html+=`<div class="card">
-    <div class="card-head">📤 Resumen para compartir</div>
+    <div class="card-head">↗ Resumen para compartir</div>
     <textarea id="detail-summary" readonly rows="14">${esc(buildShareSummary(p,p.tipo))}</textarea>
     <div class="g2 mt">
       <button class="btn btn-primary" onclick="copyDetailSummary()">Copiar versión pública</button>
@@ -1875,15 +2012,6 @@ function openDetail(id){
 
   document.getElementById('detail-page').innerHTML=html;
   showScreen('screen-detail');
-}
-
-function updateDetailStatus(status){
-  const p=props_.find(x=>x.id===curDetail);
-  if(!p)return;
-  p.estado=status;p.updatedAt=new Date().toISOString();
-  DB.set('inmo_p',props_);
-  saveRecordCloud('propiedad',p).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
-  renderProps();updateCounts();openDetail(p.id);showToast(`Estado: ${status}`);
 }
 
 function editCurrentProp(){
@@ -1940,16 +2068,16 @@ function renderProps(){
       &&price>=min&&price<=max;
   });
   if(!filtered.length){
-    list.innerHTML=`<div class="empty"><div class="e-icon">🏠</div><div class="e-title">Sin propiedades captadas</div><div class="e-sub">Toca "+ Nueva captación" para comenzar</div></div>`;
+    list.innerHTML=`<div class="empty"><div class="e-icon">⌂</div><div class="e-title">Sin propiedades captadas</div><div class="e-sub">Toca "+ Nueva captación" para comenzar</div></div>`;
     return;
   }
   list.innerHTML=filtered.map(p=>{
     const pt=PROP_TYPES.find(x=>x.id===p.tipo);
     const bdgs=[
       pt?`<span class="bdg bdg-blue">${pt.icon} ${esc(pt.name)}</span>`:'',
-      p.colonia?`<span>📍 ${esc(p.colonia)}</span>`:'',
+      p.colonia?`<span>⌖ ${esc(p.colonia)}</span>`:'',
       p.lugar?`<span>${esc(p.lugar)}</span>`:'',
-      p.m2Sup?`<span>📐 ${esc(p.m2Sup)} m²</span>`:'',
+      p.m2Sup?`<span>⟷ ${esc(p.m2Sup)} m²</span>`:'',
       (p.operacion||[]).includes('Renta')?'<span class="bdg bdg-green">Renta</span>':'',
       (p.operacion||[]).includes('Venta')?'<span class="bdg bdg-gold">Venta</span>':'',
       p.contratoFirmado?'<span class="bdg bdg-green">Contrato ✓</span>':'',
@@ -1991,21 +2119,23 @@ function renderDemanda(){
   const list=document.getElementById('list-demanda');
   const filtered=demandas.filter(d=>[d.nombre,d.zonas,...(d.tipo||[])].join(' ').toLowerCase().includes(q));
   if(!filtered.length){
-    list.innerHTML=`<div class="empty"><div class="e-icon">🔍</div><div class="e-title">Sin demanda registrada</div><div class="e-sub">Registra qué está buscando cada cliente</div></div>`;
+    list.innerHTML=`<div class="empty"><div class="e-icon">⌕</div><div class="e-title">Sin demanda registrada</div><div class="e-sub">Registra qué está buscando cada cliente</div></div>`;
     return;
   }
   list.innerHTML=filtered.map(d=>{
     const bdgs=[
       ...(d.operacion||[]).map(o=>`<span class="bdg bdg-blue">${esc(o)}</span>`),
       d.tipo?.[0]?`<span>${esc(d.tipo[0])}</span>`:'',
-      d.zonas?`<span>📍 ${esc(d.zonas)}</span>`:'',
+      d.zonas?`<span>⌖ ${esc(d.zonas)}</span>`:'',
       (d.urgencia||[])[0]?.includes('Urgente')?'<span class="bdg bdg-red">Urgente</span>':'',
     ].filter(Boolean).join('');
     const price=d.presupMax?`<div class="prop-price"><div class="amount">${fmtMXN(d.presupMax)}</div><div class="label">presupuesto máx</div></div>`:'';
+    const whatsapp=d.telefono?`<a class="mini-action whatsapp" href="https://wa.me/${whatsappPhone(d.telefono)}" target="_blank" rel="noopener">WhatsApp</a>`:'';
     return `<div class="prop-card">
       <div style="flex:1;min-width:0;">
         <div class="prop-name">${esc(d.nombre||'Cliente sin nombre')}</div>
         <div class="prop-meta">${bdgs}</div>
+        ${d.telefono?`<div class="client-contact"><span>${esc(d.telefono)}</span>${whatsapp}</div>`:''}
       </div>${price}
     </div>`;
   }).join('');
@@ -2014,7 +2144,7 @@ function renderDemanda(){
 function renderVisitas(){
   const list=document.getElementById('list-visitas');
   if(!visitas.length){
-    list.innerHTML=`<div class="empty"><div class="e-icon">📅</div><div class="e-title">Sin visitas agendadas</div><div class="e-sub">Agenda visitas para tus propiedades</div></div>`;
+    list.innerHTML=`<div class="empty"><div class="e-icon">◷</div><div class="e-title">Sin visitas agendadas</div><div class="e-sub">Agenda visitas para tus propiedades</div></div>`;
     return;
   }
   list.innerHTML=visitas.map(v=>`
@@ -2022,26 +2152,27 @@ function renderVisitas(){
       <div style="flex:1;">
         <div class="prop-name">${esc(v.nombre||'Cliente')}</div>
         <div class="prop-meta">
-          <span>📅 ${esc(v.fecha)}${v.hora?' — '+esc(v.hora):''}</span>
-          ${v.telefono?`<span>📱 ${esc(v.telefono)}</span>`:''}
+          <span>◷ ${esc(v.fecha)}${v.hora?' — '+esc(v.hora):''}</span>
+          ${v.telefono?`<span>☏ ${esc(v.telefono)}</span>`:''}
         </div>
         ${v.notas?`<div style="font-size:12px;color:var(--dim);margin-top:5px;">${esc(v.notas)}</div>`:''}
+        ${v.telefono?`<div class="client-contact"><a class="mini-action whatsapp" href="https://wa.me/${whatsappPhone(v.telefono)}" target="_blank" rel="noopener">WhatsApp</a></div>`:''}
       </div>
     </div>`).join('');
 }
 
 function renderCRM(){
   document.getElementById('crm-stats').innerHTML=[
-    {icon:'🏠',label:'Propiedades captadas',val:props_.length,color:'var(--blu)'},
-    {icon:'👤',label:'Captaciones de Ronny',val:props_.filter(p=>['Ronny','Ronnie','Ronaldo'].includes(p.asesor)).length,color:'var(--blu)'},
-    {icon:'👤',label:'Captaciones de Denny',val:props_.filter(p=>['Denny','Denise González','Denisse'].includes(p.asesor)).length,color:'var(--gld)'},
-    {icon:'🔍',label:'Clientes buscando',val:demandas.length,color:'var(--gld)'},
-    {icon:'📅',label:'Visitas agendadas',val:visitas.length,color:'var(--grn)'},
-    {icon:'✅',label:'Contratos firmados',val:props_.filter(p=>p.contratoFirmado).length,color:'var(--grn)'},
+    {icon:'⌂',label:'Propiedades captadas',val:props_.length,color:'var(--blu)'},
+    {icon:'◎',label:'Captaciones de Ronny',val:props_.filter(p=>['Ronny','Ronnie','Ronaldo'].includes(p.asesor)).length,color:'var(--blu)'},
+    {icon:'◎',label:'Captaciones de Denny',val:props_.filter(p=>['Denny','Denise González','Denisse'].includes(p.asesor)).length,color:'var(--gld)'},
+    {icon:'⌕',label:'Clientes buscando',val:demandas.length,color:'var(--gld)'},
+    {icon:'◷',label:'Visitas agendadas',val:visitas.length,color:'var(--grn)'},
+    {icon:'✓',label:'Contratos firmados',val:props_.filter(p=>p.contratoFirmado).length,color:'var(--grn)'},
     {icon:'📢',label:'Propiedades para publicar',val:props_.filter(p=>p.publicar!==false).length,color:'var(--amb)'},
-    {icon:'🔒',label:'Propiedades privadas',val:props_.filter(p=>p.publicar===false).length,color:'var(--dim)'},
+    {icon:'⊘',label:'Propiedades privadas',val:props_.filter(p=>p.publicar===false).length,color:'var(--dim)'},
     {icon:'⏸',label:'Propiedades pausadas',val:props_.filter(p=>p.estado==='Pausada').length,color:'var(--dim)'},
-    {icon:'✅',label:'Propiedades vendidas',val:props_.filter(p=>p.estado==='Vendida').length,color:'var(--grn)'},
+    {icon:'✓',label:'Propiedades vendidas',val:props_.filter(p=>p.estado==='Vendida').length,color:'var(--grn)'},
     {icon:'📁',label:'Propiedades retiradas',val:props_.filter(p=>p.estado==='Retirada').length,color:'var(--red)'},
   ].map(s=>`
     <div class="stat-card">
@@ -2091,7 +2222,7 @@ function saveDemanda(){
   DB.set('inmo_d',demandas);
   saveRecordCloud('demanda',rec).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderDemanda();updateCounts();
-  showToast('✅ Demanda guardada');
+  showToast('✓ Demanda guardada');
   // reset
   ['dem-nombre','dem-tel','dem-email','dem-min','dem-max','dem-zonas','dem-m2ter','dem-m2con','dem-notas'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
@@ -2134,7 +2265,7 @@ function saveVisita(){
   DB.set('inmo_v',visitas);
   saveRecordCloud('visita',rec).then(()=>setSyncBadge(true,'COMPARTIDO')).catch(()=>setSyncBadge(false,'PENDIENTE'));
   renderVisitas();updateCounts();
-  showToast('📅 Visita agendada');
+  showToast('◷ Visita agendada');
   ['vis-nombre','vis-tel','vis-hora','vis-notas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   showScreen('screen-main');
   switchTab('visitas');
