@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#08090b">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Inmobiliaria">
@@ -18,7 +21,7 @@
   --r:9px; --r2:13px; --r3:14px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;}
+html,body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;overflow-x:hidden;}
 button{font-family:inherit;cursor:pointer;}
 input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar{display:none;}
@@ -29,7 +32,7 @@ a{color:var(--blu);}
 .hidden{display:none!important;}
 
 /* ── SCREENS ── */
-.screen{display:none;flex-direction:column;min-height:100vh;}
+.screen{display:none;flex-direction:column;min-height:100vh;min-height:100dvh;}
 .screen.active{display:flex;}
 
 /* ── TOPBAR ── */
@@ -362,13 +365,26 @@ input[readonly]{opacity:.55;}
   --gld:#d8d9dc;--gla:#1b1e24;--grn:#a8d8b7;--red:#e78e8e;--amb:#d8bd88;
   --r:14px;--r2:19px;--r3:24px;
 }
-html,body{
-  background:linear-gradient(145deg,#07080a 0%,#0c0e12 48%,#08090b 100%);
-  background-attachment:fixed;
+html{background:#08090b;color-scheme:dark;}
+body{
+  background-color:#08090b;
+  background-image:linear-gradient(145deg,#07080a 0%,#0c0e12 48%,#08090b 100%);
+  background-repeat:no-repeat;background-size:100% 100%;
+  overscroll-behavior-y:none;
+  padding-bottom:env(safe-area-inset-bottom);
 }
 body::before{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
   background:radial-gradient(circle at 20% 0%,rgba(106,118,139,.1),transparent 32rem);
+}
+body::after{
+  content:"";position:fixed;z-index:-1;pointer-events:none;
+  left:0;right:0;bottom:-180px;height:calc(180px + env(safe-area-inset-bottom));
+  background:#08090b;
+}
+@supports (-webkit-touch-callout:none){
+  html{min-height:-webkit-fill-available;}
+  body,.screen{min-height:-webkit-fill-available;}
 }
 .topbar,.nav-tabs,.step-bar,.nav-bottom{
   background:#0d0f13;border-color:#20242b;
