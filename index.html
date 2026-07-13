@@ -737,6 +737,13 @@ const CLOUD = {
   get refresh(){return localStorage.getItem('inmo_cloud_refresh')||'';}
 };
 const cloudEnabled=()=>Boolean(CLOUD.url&&CLOUD.key&&CLOUD.token);
+function normalizeCloudUrl(url){
+  return String(url||'')
+    .trim()
+    .replace(/\/+$/,'')
+    .replace(/\/rest\/v1$/i,'')
+    .replace(/\/auth\/v1$/i,'');
+}
 
 function cloudHeaders(extra={}){
   return {
@@ -761,8 +768,10 @@ async function configureCloud(){
   if(!email)return;
   const password=prompt('Contraseña de tu cuenta (no se guardará):');
   if(!password)return;
-  localStorage.setItem('inmo_cloud_url',url.trim().replace(/\/$/,''));
+  localStorage.setItem('inmo_cloud_url',normalizeCloudUrl(url));
   localStorage.setItem('inmo_cloud_key',key.trim());
+  localStorage.removeItem('inmo_cloud_token');
+  localStorage.removeItem('inmo_cloud_refresh');
   setSyncBadge(false,'CONECTANDO');
   try{
     const r=await fetch(`${CLOUD.url}/auth/v1/token?grant_type=password`,{
@@ -771,7 +780,10 @@ async function configureCloud(){
       body:JSON.stringify({email:email.trim(),password})
     });
     const session=await r.json();
-    if(!r.ok||!session.access_token)throw new Error(session.error_description||session.msg||'No se pudo iniciar sesión');
+    if(!r.ok||!session.access_token){
+      const msg=session.error_description||session.msg||session.message||'No se pudo iniciar sesión';
+      throw new Error(msg.includes('Invalid login credentials')?'Correo o contraseña incorrectos, o usuario no confirmado en Supabase.':msg);
+    }
     localStorage.setItem('inmo_cloud_token',session.access_token);
     localStorage.setItem('inmo_cloud_refresh',session.refresh_token||'');
     await syncFromCloud(true);
